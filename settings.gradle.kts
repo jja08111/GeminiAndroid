@@ -16,7 +16,7 @@ dependencyResolutionManagement {
 rootProject.name = "Gemini Demo"
 include(":app:mobile")
 include(":app:wear")
-include(":ui:list")
-include(":ui:chat")
-include(":data:chat")
-include(":data:list")
+include(":feature:chat:ui")
+include(":feature:chat:data")
+include(":feature:list:ui")
+include(":feature:list:data")
