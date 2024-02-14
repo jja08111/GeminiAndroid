@@ -1,7 +1,7 @@
 plugins {
-  id("com.android.application")
-  id("org.jetbrains.kotlin.android")
-  id("org.jlleitschuh.gradle.ktlint")
+  alias(libs.plugins.android.application)
+  alias(libs.plugins.kotlin.android)
+  alias(libs.plugins.ktlint)
 }
 
 android {
@@ -50,16 +50,14 @@ android {
 
 dependencies {
 
-  implementation("com.google.android.gms:play-services-wearable:18.1.0")
-  implementation(platform("androidx.compose:compose-bom:2023.08.00"))
-  implementation("androidx.compose.ui:ui")
-  implementation("androidx.compose.ui:ui-tooling-preview")
-  implementation("androidx.wear.compose:compose-material:1.1.2")
-  implementation("androidx.wear.compose:compose-foundation:1.1.2")
-  implementation("androidx.activity:activity-compose:1.7.2")
-  implementation("androidx.core:core-splashscreen:1.0.1")
-  androidTestImplementation(platform("androidx.compose:compose-bom:2023.08.00"))
-  androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-  debugImplementation("androidx.compose.ui:ui-tooling")
-  debugImplementation("androidx.compose.ui:ui-test-manifest")
+  implementation(libs.play.services.wearable)
+  implementation(platform(libs.androidx.compose.bom))
+  implementation(libs.androidx.compose.ui)
+  implementation(libs.androidx.compose.ui.tooling.preview)
+  implementation(libs.androidx.wear.compose.material)
+  implementation(libs.androidx.wear.compose.foundation)
+  implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.core.splashscreen)
+  androidTestImplementation(platform(libs.androidx.compose.bom))
+  debugImplementation(libs.androidx.compose.ui.tooling)
 }
