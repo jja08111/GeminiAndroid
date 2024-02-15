@@ -6,14 +6,14 @@ plugins {
 
 android {
   namespace = "io.github.jja08111.mobile"
-  compileSdk = 34
+  compileSdk = MobileConfigurations.COMPILE_SDK
 
   defaultConfig {
     applicationId = "io.github.jja08111.mobile"
-    minSdk = 24
-    targetSdk = 34
-    versionCode = 1
-    versionName = "1.0"
+    minSdk = MobileConfigurations.MIN_SDK
+    targetSdk = MobileConfigurations.TARGET_SDK
+    versionCode = MobileConfigurations.VERSION_CODE
+    versionName = MobileConfigurations.VERSION_NAME
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables {

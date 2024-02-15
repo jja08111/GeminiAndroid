@@ -6,14 +6,14 @@ plugins {
 
 android {
   namespace = "io.github.jja08111.wear"
-  compileSdk = 34
+  compileSdk = WearConfigurations.COMPILE_SDK
 
   defaultConfig {
     applicationId = "io.github.jja08111.wear"
-    minSdk = 26
-    targetSdk = 34
-    versionCode = 1
-    versionName = "1.0"
+    minSdk = WearConfigurations.MIN_SDK
+    targetSdk = WearConfigurations.TARGET_SDK
+    versionCode = WearConfigurations.VERSION_CODE
+    versionName = WearConfigurations.VERSION_NAME
     vectorDrawables {
       useSupportLibrary = true
     }

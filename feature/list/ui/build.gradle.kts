@@ -6,10 +6,10 @@ plugins {
 
 android {
   namespace = "io.github.jja08111.feature.list.ui"
-  compileSdk = 34
+  compileSdk = MobileConfigurations.COMPILE_SDK
 
   defaultConfig {
-    minSdk = 24
+    minSdk = MobileConfigurations.MIN_SDK
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     consumerProguardFiles("consumer-rules.pro")
