@@ -3,11 +3,12 @@ androidGradlePlugin = "8.2.2"
 androidxActivity = "1.8.2"
 androidxAppCompat = "1.6.1"
 androidxCompose = "1.6.1"
+androidxComposeCompiler = "1.5.8"
 androidxComposeBom = "2024.02.00"
 androidxComposeMaterial3 = "1.2.0"
 androidxCore = "1.12.0"
 androidxCoreSplashscreen = "1.0.1"
-kotlin = "1.9.0"
+kotlin = "1.9.22"
 junit = "4.13.2"
 androidx-test-ext-junit = "1.1.5"
 espresso-core = "3.5.1"
@@ -39,8 +40,13 @@ play-services-wearable = { module = "com.google.android.gms:play-services-wearab
 androidx-wear-compose-material = { module = "androidx.wear.compose:compose-material", version.ref = "androidxWearComposeMaterial" }
 androidx-wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "androidxWearComposeFoundation" }
 
+# Dependencies of the included build-logic
+android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "androidGradlePlugin" }
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+org-jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
