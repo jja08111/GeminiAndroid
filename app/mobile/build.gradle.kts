@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-  namespace = "io.github.jja08111.mobile"
+  namespace = "io.jja08111.gemini.mobile"
   compileSdk = MobileConfigurations.COMPILE_SDK
 
   defaultConfig {
-    applicationId = "io.github.jja08111.mobile"
+    applicationId = "io.jja08111.gemini.mobile"
     minSdk = MobileConfigurations.MIN_SDK
     targetSdk = MobileConfigurations.TARGET_SDK
     versionCode = MobileConfigurations.VERSION_CODE

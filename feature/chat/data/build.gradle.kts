@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-  namespace = "io.github.jja08111.feature.chat.data"
+  namespace = "io.jja08111.gemini.feature.chat.data"
 }
 
 secrets {

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-  namespace = "io.github.jja08111.feature.rooms.data"
+  namespace = "io.jja08111.gemini.feature.rooms.data"
 }
 
 dependencies {

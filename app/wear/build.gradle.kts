@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-  namespace = "io.github.jja08111.wear"
+  namespace = "io.jja08111.gemini.wear"
   compileSdk = WearConfigurations.COMPILE_SDK
 
   defaultConfig {
-    applicationId = "io.github.jja08111.wear"
+    applicationId = "io.jja08111.gemini.wear"
     minSdk = WearConfigurations.MIN_SDK
     targetSdk = WearConfigurations.TARGET_SDK
     versionCode = WearConfigurations.VERSION_CODE
