@@ -1,10 +1,16 @@
 plugins {
   id("jja08111.android.library")
+  alias(libs.plugins.google.secrets)
   alias(libs.plugins.ktlint)
 }
 
 android {
   namespace = "io.github.jja08111.feature.chat.data"
+}
+
+secrets {
+  propertiesFileName = "secrets.properties"
+  defaultPropertiesFileName = "secrets.defaults.properties"
 }
 
 dependencies {
