@@ -1,5 +1,6 @@
 plugins {
   id("jja08111.android.library")
+  id("jja08111.android.hilt")
   alias(libs.plugins.google.secrets)
   alias(libs.plugins.ktlint)
 }

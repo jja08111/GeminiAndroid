@@ -1,6 +1,8 @@
 plugins {
   id("jja08111.android.application")
   id("jja08111.android.application.compose")
+  id("jja08111.android.hilt")
+  id("dagger.hilt.android.plugin")
   alias(libs.plugins.ktlint)
 }
 

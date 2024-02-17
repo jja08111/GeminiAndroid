@@ -23,6 +23,10 @@ gradlePlugin {
       id = "jja08111.android.application"
       implementationClass = "AndroidApplicationConventionPlugin"
     }
+    register("AndroidHiltPlugin") {
+      id = "jja08111.android.hilt"
+      implementationClass = "AndroidHiltConventionPlugin"
+    }
     register("AndroidLibraryPlugin") {
       id = "jja08111.android.library"
       implementationClass = "AndroidLibraryConventionPlugin"

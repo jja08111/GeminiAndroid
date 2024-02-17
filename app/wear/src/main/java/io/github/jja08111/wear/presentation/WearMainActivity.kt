@@ -24,9 +24,11 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
+import dagger.hilt.android.AndroidEntryPoint
 import io.github.jja08111.wear.R
 import io.github.jja08111.wear.presentation.theme.GeminiDemoTheme
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     installSplashScreen()
