@@ -17,7 +17,8 @@ interface RoomDao {
       SELECT 
         RoomEntity.id AS id,
         RoomEntity.created_at AS created_at,
-        MessageEntity.id AS message_id, 
+        MessageEntity.id AS message_id,
+        MessageEntity.role AS message_role,
         MessageEntity.content AS message_content, 
         MessageEntity.type AS message_type, 
         MessageEntity.created_at AS message_created_at

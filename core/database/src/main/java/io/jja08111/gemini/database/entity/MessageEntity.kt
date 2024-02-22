@@ -20,6 +20,7 @@ data class MessageEntity(
   @PrimaryKey val id: String,
   @ColumnInfo("room_id") val roomId: String,
   @ColumnInfo("content") val content: String,
+  @ColumnInfo("role") val role: String,
   @ColumnInfo("type") val type: String,
   @ColumnInfo("created_at") val createdAt: Long,
 )

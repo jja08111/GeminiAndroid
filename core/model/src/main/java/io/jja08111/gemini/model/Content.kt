@@ -6,9 +6,9 @@ enum class ContentType(val rawText: String) {
 
 sealed class Content(val type: ContentType) {
   companion object {
-    fun of(rawText: String): Content {
-      return when (rawText) {
-        ContentType.Text.rawText -> TextContent(rawText)
+    fun of(type: String, content: String): Content {
+      return when (type) {
+        ContentType.Text.rawText -> TextContent(text = content)
         else -> throw IllegalArgumentException()
       }
     }
