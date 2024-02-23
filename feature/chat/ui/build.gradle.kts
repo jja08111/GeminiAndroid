@@ -1,5 +1,8 @@
 plugins {
   id("jja08111.android.library")
+  id("jja08111.android.library.compose")
+  id("jja08111.android.hilt")
+  id("dagger.hilt.android.plugin")
   alias(libs.plugins.ktlint)
 }
 
@@ -8,6 +11,26 @@ android {
 }
 
 dependencies {
+
+  implementation(project(":core:navigation"))
+  implementation(project(":core:model"))
+  implementation(project(":feature:chat:data"))
+
+  implementation(libs.androidx.activity.compose)
+  implementation(platform(libs.androidx.compose.bom))
+  implementation(libs.androidx.compose.ui)
+  implementation(libs.androidx.compose.ui.tooling.preview)
+  implementation(libs.androidx.compose.material3)
+  implementation(libs.androidx.hilt.navigation.compose)
+
+  implementation(libs.androidx.room.paging)
+  implementation(libs.androidx.paging.compose)
+
+  implementation(libs.orbit.compose)
+  implementation(libs.orbit.viewmodel)
+  testImplementation(libs.orbit.test)
+
+  implementation(libs.google.generative.ai)
 
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.appcompat)

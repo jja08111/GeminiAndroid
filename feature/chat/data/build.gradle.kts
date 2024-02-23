@@ -16,6 +16,11 @@ secrets {
 
 dependencies {
 
+  implementation(project(":core:model"))
+  implementation(project(":core:database"))
+
+  implementation(libs.androidx.room.paging)
+
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.appcompat)
   implementation(libs.material)
