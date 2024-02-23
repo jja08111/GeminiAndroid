@@ -54,7 +54,7 @@ class ChatViewModel @Inject constructor(
       pagingData.map { message ->
         intent {
           if (state.isGenerating && message.id == state.generatingMessageId) {
-            reduce { state.copy(respondingMessage = null, generatingMessageId = null) }
+            reduceStateToGenerationEnd()
           }
         }
         message
@@ -85,6 +85,7 @@ class ChatViewModel @Inject constructor(
     return this.catch { throwable ->
       Log.e(TAG, "Error caused when generating response. $throwable")
       intent {
+        reduceStateToGenerationEnd()
         when (throwable) {
           is ResponseStoppedException -> postSideEffect(
             ChatSideEffect.UserMessage(
@@ -106,6 +107,12 @@ class ChatViewModel @Inject constructor(
           )
         }
       }
+    }
+  }
+
+  private fun reduceStateToGenerationEnd() {
+    intent {
+      reduce { state.copy(respondingMessage = null, generatingMessageId = null) }
     }
   }
 
