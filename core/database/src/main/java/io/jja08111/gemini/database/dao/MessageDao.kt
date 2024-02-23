@@ -8,7 +8,7 @@ import io.jja08111.gemini.database.entity.MessageEntity
 
 @Dao
 interface MessageDao {
-  @Query("SELECT * FROM MessageEntity WHERE room_id = :roomId")
+  @Query("SELECT * FROM MessageEntity WHERE room_id = :roomId ORDER BY created_at DESC")
   fun getMessagePagingSource(roomId: String): PagingSource<Int, MessageEntity>
 
   @Query("SELECT * FROM MessageEntity WHERE room_id = :roomId")
