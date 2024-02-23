@@ -15,13 +15,14 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -45,6 +46,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun ChatScreen(
   uiState: ChatUiState,
+  snackbarHostState: SnackbarHostState,
   listState: LazyListState = rememberLazyListState(),
   onBackClick: () -> Unit,
   onInputUpdate: (String) -> Unit,
@@ -64,6 +66,7 @@ internal fun ChatScreen(
   }
 
   Scaffold(
+    snackbarHost = { SnackbarHost(snackbarHostState) },
     topBar = {
       TopAppBar(
         title = {},

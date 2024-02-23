@@ -14,6 +14,7 @@ dependencies {
 
   implementation(project(":core:navigation"))
   implementation(project(":core:model"))
+  implementation(project(":core:ui"))
   implementation(project(":feature:chat:data"))
 
   implementation(libs.androidx.activity.compose)
