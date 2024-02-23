@@ -43,6 +43,8 @@ import io.jja08111.gemini.model.Role
 import io.jja08111.gemini.model.TextContent
 import kotlinx.coroutines.launch
 
+private const val BULLET_CHARACTER = '●'
+
 @Composable
 internal fun ChatScreen(
   uiState: ChatUiState,
@@ -98,12 +100,14 @@ internal fun ChatScreen(
         ) {
           if (uiState.generatingMessageId != null) {
             item(key = uiState.generatingMessageId, contentType = Role.Model) {
-              uiState.respondingMessage?.let { respondingMessage ->
+              val isLastMessageFromUser = messages.itemCount > 0 && messages[0]?.isMe == true
+              if (uiState.isGenerating && isLastMessageFromUser) {
+                val respondingMessage = uiState.respondingMessage ?: ""
                 TextMessageItem(
                   modifier = messageItemModifier
                     .align(Alignment.CenterStart)
                     .animateContentSize(),
-                  text = respondingMessage,
+                  text = "$respondingMessage$BULLET_CHARACTER",
                   isMe = false,
                 )
               }
