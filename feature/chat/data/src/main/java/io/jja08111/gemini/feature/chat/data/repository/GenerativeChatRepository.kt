@@ -128,6 +128,7 @@ class GenerativeChatRepository @Inject constructor(
         role = Role.User,
         // Hardcoding minus to place user message front of model message.
         createdAt = Date(createdAt.time - 1),
+        state = MessageState.Success,
       ).toEntity(),
       Message(
         id = modelMessageId,
@@ -135,6 +136,7 @@ class GenerativeChatRepository @Inject constructor(
         role = Role.Model,
         content = TextContent(text = ""),
         createdAt = createdAt,
+        state = MessageState.Generating,
       ).toEntity(),
     )
   }
