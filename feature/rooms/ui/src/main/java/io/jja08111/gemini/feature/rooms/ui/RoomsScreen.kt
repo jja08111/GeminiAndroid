@@ -59,7 +59,7 @@ fun RoomsScreen(
     ) {
       val rooms = uiState.roomStream.collectAsLazyPagingItems()
       val loadState = rooms.loadState
-      LazyColumn {
+      LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(count = rooms.itemCount) { index ->
           val room = checkNotNull(rooms[index])
           RoomTile(
