@@ -176,7 +176,7 @@ private fun BoxScope.MessageList(
       MessageItem(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(vertical = 4.dp)
+          .padding(bottom = 8.dp)
           .align(if (message.isMe) Alignment.CenterEnd else Alignment.CenterStart),
         message = message,
       )
