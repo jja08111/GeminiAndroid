@@ -7,7 +7,11 @@ enum class Role(val text: String) {
 
   companion object {
     fun of(role: String): Role {
-      return entries.find { it.text == role } ?: throw IllegalArgumentException()
+      return when (role) {
+        User.text -> User
+        Model.text -> Model
+        else -> throw IllegalArgumentException()
+      }
     }
   }
 }
