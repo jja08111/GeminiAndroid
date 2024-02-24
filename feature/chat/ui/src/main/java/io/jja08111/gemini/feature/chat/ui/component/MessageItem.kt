@@ -2,10 +2,17 @@ package io.jja08111.gemini.feature.chat.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
@@ -15,12 +22,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.jja08111.gemini.core.ui.R
 import io.jja08111.gemini.model.Message
+import io.jja08111.gemini.model.MessageState
 import io.jja08111.gemini.model.TextContent
 
 @Composable
@@ -30,7 +39,7 @@ internal fun MessageItem(modifier: Modifier = Modifier, message: Message) {
       modifier = modifier,
       text = content.text,
       isMe = message.isFromUser,
-      isError = message.isError,
+      state = message.state,
     )
   }
 }
@@ -43,7 +52,7 @@ private fun TextMessageItem(
   modifier: Modifier = Modifier,
   text: String,
   isMe: Boolean,
-  isError: Boolean,
+  state: MessageState,
 ) {
   val largeShape = MaterialTheme.shapes.large
   val textColor = if (isMe) {
@@ -78,42 +87,91 @@ private fun TextMessageItem(
         .padding(16.dp)
         .align(if (isMe) Alignment.CenterEnd else Alignment.CenterStart),
     ) {
-      val informationColor = textColor.copy(alpha = 0.4f)
-      if (isError) {
-        Icon(
-          modifier = Modifier
-            .align(Alignment.CenterVertically)
-            .padding(end = 4.dp),
-          imageVector = Icons.Default.Info,
-          tint = informationColor,
-          contentDescription = null,
-        )
-      }
-      Text(
-        modifier = Modifier.align(Alignment.CenterVertically),
-        text = buildAnnotatedString {
-          when {
-            isError || text.isBlank() -> {
-              pushStyle(SpanStyle(color = informationColor))
-              append(
-                stringResource(
-                  id = if (isError) {
-                    R.string.something_went_wrong
-                  } else {
-                    R.string.empty_content
-                  },
-                ),
-              )
-              pop()
-            }
+      when {
+        state == MessageState.Error -> {
+          ErrorMessageItem(textColor = textColor.copy(alpha = 0.4f))
+        }
 
-            else -> append(text)
-          }
-        },
-        style = MaterialTheme.typography.bodyLarge.copy(
-          color = textColor,
-        ),
+        state == MessageState.Generating && text.isEmpty() -> {
+          Shimmer()
+        }
+
+        else -> {
+          Text(
+            modifier = Modifier.align(Alignment.CenterVertically),
+            text = text,
+            style = MaterialTheme.typography.bodyLarge.copy(
+              color = textColor,
+            ),
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun ErrorMessageItem(textColor: Color) {
+  Row {
+    Icon(
+      modifier = Modifier
+        .align(Alignment.CenterVertically)
+        .padding(end = 4.dp),
+      imageVector = Icons.Default.Info,
+      tint = MaterialTheme.colorScheme.error,
+      contentDescription = null,
+    )
+    Text(
+      text = stringResource(id = R.string.something_went_wrong),
+      style = MaterialTheme.typography.bodyLarge.copy(
+        color = textColor,
+      ),
+    )
+  }
+}
+
+@Composable
+private fun Shimmer() {
+  val fontScale = LocalDensity.current.fontScale
+  val color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+
+  BoxWithConstraints ConstraintsScope@{
+    Column {
+      Box(
+        modifier = Modifier
+          .height(20.dp * fontScale)
+          .fillMaxWidth()
+          .clip(RoundedCornerShape(4.dp))
+          .background(color = color),
+      )
+      Spacer(modifier = Modifier.height(8.dp))
+      Box(
+        modifier = Modifier
+          .height(20.dp * fontScale)
+          .fillMaxWidth()
+          .clip(RoundedCornerShape(4.dp))
+          .background(color = color),
+      )
+      Spacer(modifier = Modifier.height(8.dp))
+      Box(
+        modifier = Modifier
+          .height(20.dp * fontScale)
+          .width(this@ConstraintsScope.maxWidth - 120.dp)
+          .clip(RoundedCornerShape(4.dp))
+          .background(color = color),
       )
     }
   }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ErrorMessagePreview() {
+  ErrorMessageItem(textColor = Color.Black)
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ShimmerPreview() {
+  Shimmer()
 }
