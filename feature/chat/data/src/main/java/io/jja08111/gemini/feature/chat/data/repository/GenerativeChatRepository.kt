@@ -103,7 +103,7 @@ class GenerativeChatRepository @Inject constructor(
             val isError = throwable != null
             val messageState = MessageStateEntity(
               id = id,
-              state = if (isError) MessageState.Error else MessageState.Generated,
+              state = if (isError) MessageState.Error else MessageState.Success,
             )
             messageDao.update(messageState)
             val result = if (throwable != null) Result.failure(throwable) else Result.success(Unit)
