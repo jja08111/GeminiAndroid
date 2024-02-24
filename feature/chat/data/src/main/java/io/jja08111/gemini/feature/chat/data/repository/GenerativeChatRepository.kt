@@ -110,6 +110,7 @@ class GenerativeChatRepository @Inject constructor(
       text(message)
     }
     val responseText = StringBuilder()
+    // TODO: Keep generating response when the user exit the room.
     return chat
       .sendMessageStream(content)
       .onEach { response ->
