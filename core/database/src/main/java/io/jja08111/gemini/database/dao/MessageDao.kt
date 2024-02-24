@@ -6,7 +6,7 @@ import androidx.room.Query
 import androidx.room.Update
 import io.jja08111.gemini.database.entity.MessageContentEntity
 import io.jja08111.gemini.database.entity.MessageEntity
-import io.jja08111.gemini.database.entity.MessageErrorEntity
+import io.jja08111.gemini.database.entity.MessageStateEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -21,5 +21,5 @@ interface MessageDao {
   suspend fun update(message: MessageContentEntity)
 
   @Update(entity = MessageEntity::class)
-  suspend fun update(message: MessageErrorEntity)
+  suspend fun update(message: MessageStateEntity)
 }

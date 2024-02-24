@@ -17,7 +17,7 @@ fun Message.toEntity(): MessageEntity {
     createdAt = createdAt.time,
     role = role.text,
     type = content.type.rawText,
-    isError = isError,
+    state = state,
   )
 }
 
@@ -28,6 +28,6 @@ fun MessageEntity.toDomain(): Message {
     content = Content.of(type = type, content = content),
     createdAt = Date(createdAt),
     role = Role.of(role),
-    isError = isError,
+    state = state,
   )
 }

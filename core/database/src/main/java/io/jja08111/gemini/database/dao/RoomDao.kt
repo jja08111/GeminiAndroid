@@ -21,7 +21,7 @@ interface RoomDao {
         MessageEntity.role AS message_role,
         MessageEntity.content AS message_content, 
         MessageEntity.type AS message_type,
-        MessageEntity.is_error AS message_is_error, 
+        MessageEntity.state AS message_state, 
         MessageEntity.created_at AS message_created_at
       FROM RoomEntity
       LEFT JOIN (

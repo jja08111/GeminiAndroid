@@ -5,11 +5,12 @@ import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.jja08111.gemini.database.dao.MessageDao
 import io.jja08111.gemini.database.entity.MessageContentEntity
-import io.jja08111.gemini.database.entity.MessageErrorEntity
+import io.jja08111.gemini.database.entity.MessageStateEntity
 import io.jja08111.gemini.database.extension.toDomain
 import io.jja08111.gemini.database.extension.toEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
 import io.jja08111.gemini.model.Message
+import io.jja08111.gemini.model.MessageState
 import io.jja08111.gemini.model.Role
 import io.jja08111.gemini.model.TextContent
 import kotlinx.coroutines.CoroutineScope
@@ -100,8 +101,11 @@ class GenerativeChatRepository @Inject constructor(
           }
           .onCompletion { throwable ->
             val isError = throwable != null
-            val messageError = MessageErrorEntity(id = id, isError = isError)
-            messageDao.update(messageError)
+            val messageState = MessageStateEntity(
+              id = id,
+              state = if (isError) MessageState.Error else MessageState.Generated,
+            )
+            messageDao.update(messageState)
             val result = if (throwable != null) Result.failure(throwable) else Result.success(Unit)
             continuation.resume(result)
           }

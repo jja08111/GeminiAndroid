@@ -9,5 +9,8 @@ data class Message(
   val role: Role,
   val createdAt: Date = Date(),
   val content: Content,
-  val isError: Boolean = false,
-)
+  val state: MessageState = MessageState.Generating,
+) {
+  val isError: Boolean
+    get() = state == MessageState.Error
+}

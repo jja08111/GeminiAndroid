@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.PrimaryKey
+import io.jja08111.gemini.model.MessageState
 
 @Entity(
   foreignKeys = [
@@ -23,5 +24,5 @@ data class MessageEntity(
   @ColumnInfo("role") val role: String,
   @ColumnInfo("type") val type: String,
   @ColumnInfo("created_at") val createdAt: Long,
-  @ColumnInfo("is_error", defaultValue = "0") val isError: Boolean,
+  @ColumnInfo("state") val state: MessageState,
 )
