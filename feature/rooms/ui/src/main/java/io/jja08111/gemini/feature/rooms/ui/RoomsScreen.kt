@@ -144,6 +144,7 @@ fun Modifier.verticalScrollDisabled() =
     }
   }
 
+// TODO: Show summarized user message.
 @Composable
 internal fun RoomTile(modifier: Modifier = Modifier, room: Room, onClick: () -> Unit) {
   val recentMessage = room.recentMessage
