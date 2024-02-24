@@ -3,6 +3,7 @@ package io.jja08111.gemini.feature.chat.ui
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
@@ -61,6 +64,7 @@ internal fun ChatScreen(
 ) {
   val messages = uiState.messageStream.collectAsLazyPagingItems()
   val coroutineScope = rememberCoroutineScope()
+  val isRefreshing = messages.loadState.refresh is LoadState.Loading
 
   LaunchedEffect(messages.itemCount) {
     if (messages.itemCount > 0) {
@@ -89,66 +93,98 @@ internal fun ChatScreen(
     },
   ) { innerPadding ->
     Column(modifier = Modifier.padding(innerPadding)) {
-      val messageItemModifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 4.dp)
-
       Box(
         modifier = Modifier
           .fillMaxWidth()
           .weight(1f),
       ) {
-        LazyColumn(
-          state = listState,
-          reverseLayout = true,
-          contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-          if (uiState.generatingMessageId != null) {
-            item(key = uiState.generatingMessageId, contentType = Role.Model) {
-              val isLastMessageFromUser = messages.itemCount > 0 && messages[0]?.isMe == true
-              if (uiState.isGenerating && isLastMessageFromUser) {
-                val respondingMessage = uiState.respondingMessage ?: ""
-                TextMessageItem(
-                  modifier = messageItemModifier
-                    .align(Alignment.CenterStart)
-                    .animateContentSize(),
-                  text = "$respondingMessage$BULLET_CHARACTER",
-                  isMe = false,
-                )
-              }
-            }
-          }
-          items(
-            count = messages.itemCount,
-            key = messages.itemKey { it.id },
-            contentType = messages.itemContentType { it.role },
-          ) {
-            val message = messages[it] ?: return@items
-            MessageItem(
-              modifier = messageItemModifier
-                .align(if (message.isMe) Alignment.CenterEnd else Alignment.CenterStart),
-              message = message,
+        if (!isRefreshing && messages.itemCount == 0) {
+          EmptyContent()
+        } else {
+          MessageList(
+            listState = listState,
+            generatingMessageId = uiState.generatingMessageId,
+            messages = messages,
+            isGenerating = uiState.isGenerating,
+            respondingMessage = uiState.respondingMessage,
+          )
+          if (listState.canScrollBackward) {
+            GotoBottomButton(
+              modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+              onClick = {
+                coroutineScope.launch {
+                  listState.scrollToItem(0)
+                }
+              },
             )
           }
         }
-        if (listState.canScrollBackward) {
-          GotoBottomButton(
-            modifier = Modifier
-              .align(Alignment.BottomEnd)
-              .padding(16.dp),
-            onClick = {
-              coroutineScope.launch {
-                listState.scrollToItem(0)
-              }
-            },
-          )
-        }
       }
+
       ActionBar(
         inputMessage = uiState.inputMessage,
         enabledSendButton = uiState.canSendMessage,
         onSendClick = onSendClick,
         onInputMessageChange = onInputUpdate,
+      )
+    }
+  }
+}
+
+@Composable
+fun BoxScope.EmptyContent() {
+  Text(
+    modifier = Modifier.align(Alignment.Center),
+    text = stringResource(R.string.feature_chat_ui_empty_content_title),
+    style = MaterialTheme.typography.headlineMedium.copy(
+      color = MaterialTheme.colorScheme.onBackground,
+    ),
+  )
+}
+
+@Composable
+private fun BoxScope.MessageList(
+  listState: LazyListState,
+  generatingMessageId: String?,
+  messages: LazyPagingItems<Message>,
+  isGenerating: Boolean,
+  respondingMessage: String?,
+) {
+  val messageItemModifier = Modifier
+    .fillMaxWidth()
+    .padding(vertical = 4.dp)
+
+  LazyColumn(
+    state = listState,
+    reverseLayout = true,
+    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+  ) {
+    if (generatingMessageId != null) {
+      item(key = generatingMessageId, contentType = Role.Model) {
+        val isLastMessageFromUser = messages.itemCount > 0 && messages[0]?.isMe == true
+        if (isGenerating && isLastMessageFromUser) {
+          TextMessageItem(
+            modifier = messageItemModifier
+              .align(Alignment.CenterStart)
+              .animateContentSize(),
+            text = "${respondingMessage ?: ""}$BULLET_CHARACTER",
+            isMe = false,
+          )
+        }
+      }
+    }
+    items(
+      count = messages.itemCount,
+      key = messages.itemKey { it.id },
+      contentType = messages.itemContentType { it.role },
+    ) {
+      val message = messages[it] ?: return@items
+      MessageItem(
+        modifier = messageItemModifier
+          .align(if (message.isMe) Alignment.CenterEnd else Alignment.CenterStart),
+        message = message,
       )
     }
   }
