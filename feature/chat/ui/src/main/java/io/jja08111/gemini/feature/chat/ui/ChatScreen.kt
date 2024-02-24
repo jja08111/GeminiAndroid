@@ -125,7 +125,7 @@ internal fun ChatScreen(
 
       ActionBar(
         inputMessage = uiState.inputMessage,
-        enabledSendButton = uiState.canSendMessage,
+        canSend = uiState.canSendMessage,
         onSendClick = onSendClick,
         onInputMessageChange = onInputUpdate,
       )
@@ -305,7 +305,7 @@ private fun GotoBottomButton(modifier: Modifier = Modifier, onClick: () -> Unit)
 @Composable
 private fun ActionBar(
   inputMessage: String,
-  enabledSendButton: Boolean,
+  canSend: Boolean,
   onInputMessageChange: (String) -> Unit,
   onSendClick: (String) -> Unit,
 ) {
@@ -326,15 +326,16 @@ private fun ActionBar(
       Text(text = stringResource(R.string.feature_chat_ui_message_gemini_placeholder))
     },
     trailingIcon = {
-      IconButton(
-        onClick = { onSendClick(inputMessage) },
-        enabled = enabledSendButton,
-      ) {
-        Icon(
-          modifier = Modifier.padding(8.dp),
-          imageVector = Icons.AutoMirrored.Filled.Send,
-          contentDescription = "Send message",
-        )
+      if (canSend) {
+        IconButton(
+          onClick = { onSendClick(inputMessage) },
+        ) {
+          Icon(
+            modifier = Modifier.padding(8.dp),
+            imageVector = Icons.AutoMirrored.Filled.Send,
+            contentDescription = "Send message",
+          )
+        }
       }
     },
   )
