@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
+import org.orbitmvi.orbit.syntax.simple.SimpleSyntax
 import org.orbitmvi.orbit.syntax.simple.blockingIntent
 import org.orbitmvi.orbit.syntax.simple.intent
 import org.orbitmvi.orbit.syntax.simple.postSideEffect
@@ -95,11 +96,13 @@ class ChatViewModel @Inject constructor(
               ),
             ),
           )
+
           is ServerException -> postSideEffect(
             ChatSideEffect.UserMessage(
               StringValue.Resource(R.string.feature_chat_ui_server_error_message),
             ),
           )
+
           else -> postSideEffect(
             ChatSideEffect.UserMessage(
               StringValue.Resource(R.string.feature_chat_ui_unknown_error_message),
@@ -110,10 +113,8 @@ class ChatViewModel @Inject constructor(
     }
   }
 
-  private fun reduceStateToGenerationEnd() {
-    intent {
-      reduce { state.copy(respondingMessage = null, generatingMessageId = null) }
-    }
+  private suspend fun SimpleSyntax<ChatUiState, ChatSideEffect>.reduceStateToGenerationEnd() {
+    reduce { state.copy(respondingMessage = null, generatingMessageId = null) }
   }
 
   override fun onCleared() {
