@@ -15,12 +15,12 @@ interface RoomDao {
   @Query(
     """
       SELECT 
-        RoomEntity.id AS id,
-        RoomEntity.created_at AS created_at,
+        RoomEntity.*,
         MessageEntity.id AS message_id,
+        MessageEntity.room_id AS message_room_id, 
         MessageEntity.role AS message_role,
         MessageEntity.content AS message_content, 
-        MessageEntity.type AS message_type, 
+        MessageEntity.type AS message_type,
         MessageEntity.is_error AS message_is_error, 
         MessageEntity.created_at AS message_created_at
       FROM RoomEntity
