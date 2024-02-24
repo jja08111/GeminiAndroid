@@ -9,6 +9,7 @@ import com.google.ai.client.generativeai.type.GenerateContentResponse
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.jja08111.gemini.database.dao.MessageDao
+import io.jja08111.gemini.database.entity.MessageErrorEntity
 import io.jja08111.gemini.database.extension.toDomain
 import io.jja08111.gemini.database.extension.toEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import java.util.UUID
 import javax.inject.Inject
 
 class GenerativeChatRepository @Inject constructor(
@@ -54,7 +56,7 @@ class GenerativeChatRepository @Inject constructor(
         },
       )
     }
-    val content = messageDao.getAllMessages(roomId).map {
+    val contents = messageDao.getAllMessages(roomId).map {
       val message = it.toDomain()
       return@map when (message.content) {
         is TextContent -> content {
@@ -63,7 +65,7 @@ class GenerativeChatRepository @Inject constructor(
         }
       }
     }
-    generativeChat.value?.history?.addAll(content)
+    generativeChat.value?.history?.addAll(contents)
   }
 
   override fun getMessageStream(roomId: String): Flow<PagingData<Message>> {
@@ -72,12 +74,18 @@ class GenerativeChatRepository @Inject constructor(
     }.flow.map { pagingData -> pagingData.map { it.toDomain() } }
   }
 
-  private suspend fun insertUserTextMessage(message: String, roomId: String) {
+  private suspend fun insertTextMessage(
+    message: String,
+    messageId: String,
+    roomId: String,
+    role: Role,
+  ) {
     messageDao.insert(
       Message(
+        id = messageId,
         roomId = roomId,
         content = TextContent(message),
-        role = Role.User,
+        role = role,
       ).toEntity(),
     )
   }
@@ -85,8 +93,14 @@ class GenerativeChatRepository @Inject constructor(
   override suspend fun sendTextMessage(message: String, id: String): Flow<GenerateContentResponse> {
     val roomId = this.currentRoomId.value ?: throwJoinNotCalledError()
     val chat = this.generativeChat.value ?: throwJoinNotCalledError()
+    val userMessageId = UUID.randomUUID().toString()
 
-    insertUserTextMessage(message = message, roomId = roomId)
+    insertTextMessage(
+      message = message,
+      messageId = userMessageId,
+      roomId = roomId,
+      role = Role.User,
+    )
 
     val content = content {
       role = Role.User.text
@@ -97,15 +111,17 @@ class GenerativeChatRepository @Inject constructor(
       .sendMessageStream(content)
       .onEach { response ->
         responseText.append(response.text)
-      }.onCompletion {
-        if (responseText.isNotEmpty()) {
-          messageDao.insert(
-            Message(
-              id = id,
-              roomId = roomId,
-              content = TextContent(responseText.toString()),
-              role = Role.Model,
-            ).toEntity(),
+      }
+      .onCompletion { throwable ->
+        when {
+          responseText.isNotEmpty() -> insertTextMessage(
+            messageId = id,
+            roomId = roomId,
+            message = responseText.toString(),
+            role = Role.Model,
+          )
+          throwable != null -> messageDao.update(
+            message = MessageErrorEntity(id = userMessageId, roomId = roomId),
           )
         }
       }

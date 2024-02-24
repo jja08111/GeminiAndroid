@@ -9,4 +9,5 @@ data class Message(
   val role: Role,
   val createdAt: Date = Date(),
   val content: Content,
+  val isError: Boolean = false,
 )

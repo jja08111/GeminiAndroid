@@ -4,7 +4,9 @@ import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import io.jja08111.gemini.database.entity.MessageEntity
+import io.jja08111.gemini.database.entity.MessageErrorEntity
 
 @Dao
 interface MessageDao {
@@ -16,4 +18,7 @@ interface MessageDao {
 
   @Insert
   suspend fun insert(messageEntity: MessageEntity)
+
+  @Update(entity = MessageEntity::class)
+  suspend fun update(message: MessageErrorEntity)
 }

@@ -23,4 +23,5 @@ data class MessageEntity(
   @ColumnInfo("role") val role: String,
   @ColumnInfo("type") val type: String,
   @ColumnInfo("created_at") val createdAt: Long,
+  @ColumnInfo("is_error", defaultValue = "0") val isError: Boolean,
 )

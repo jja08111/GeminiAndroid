@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "4ddeca6cecf4f7481e5ec7cd6a7135ba",
+    "identityHash": "68d2056bdf1c7073f68066b4eb8087c2",
     "entities": [
       {
         "tableName": "RoomEntity",
@@ -32,7 +32,7 @@
       },
       {
         "tableName": "MessageEntity",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `room_id` TEXT NOT NULL, `content` TEXT NOT NULL, `role` TEXT NOT NULL, `type` TEXT NOT NULL, `created_at` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`room_id`) REFERENCES `RoomEntity`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `room_id` TEXT NOT NULL, `content` TEXT NOT NULL, `role` TEXT NOT NULL, `type` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `is_error` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`), FOREIGN KEY(`room_id`) REFERENCES `RoomEntity`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -69,6 +69,13 @@
             "columnName": "created_at",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "isError",
+            "columnName": "is_error",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -96,7 +103,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4ddeca6cecf4f7481e5ec7cd6a7135ba')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '68d2056bdf1c7073f68066b4eb8087c2')"
     ]
   }
 }
