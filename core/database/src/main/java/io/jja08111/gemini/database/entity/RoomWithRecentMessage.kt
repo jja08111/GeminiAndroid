@@ -10,5 +10,6 @@ data class RoomWithRecentMessage(
   @ColumnInfo(name = "message_content") val messageContent: String?,
   @ColumnInfo(name = "message_role") val messageRole: String?,
   @ColumnInfo(name = "message_type") val messageType: String?,
+  @ColumnInfo(name = "message_is_error") val messageIsError: Boolean?,
   @ColumnInfo(name = "message_created_at") val messageCreatedAt: Long?,
 )

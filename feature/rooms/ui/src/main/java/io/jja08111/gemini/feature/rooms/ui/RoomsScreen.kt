@@ -154,11 +154,15 @@ internal fun RoomTile(modifier: Modifier = Modifier, room: Room, onClick: () -> 
       .padding(horizontal = 16.dp, vertical = 12.dp),
   ) {
     Text(
-      text = when (val content = recentMessage?.content) {
-        is TextContent -> content.text.ifBlank {
-          stringResource(id = io.jja08111.gemini.core.ui.R.string.empty_content)
+      text = if (recentMessage?.isError == true) {
+        stringResource(id = io.jja08111.gemini.core.ui.R.string.something_went_wrong)
+      } else {
+        when (val content = recentMessage?.content) {
+          is TextContent -> content.text.ifBlank {
+            stringResource(id = io.jja08111.gemini.core.ui.R.string.empty_content)
+          }
+          null -> "New chat"
         }
-        null -> "New chat"
       },
       maxLines = 2,
       overflow = TextOverflow.Ellipsis,

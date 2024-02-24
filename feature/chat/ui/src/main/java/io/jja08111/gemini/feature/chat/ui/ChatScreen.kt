@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -15,6 +16,7 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -161,6 +163,7 @@ private fun MessageItem(modifier: Modifier = Modifier, message: Message) {
       modifier = modifier,
       text = content.text,
       isMe = message.isMe,
+      isError = message.isError,
     )
   }
 }
@@ -169,7 +172,12 @@ private val HorizontalMargin = 40.dp
 
 // TODO: Implement retry feature
 @Composable
-private fun TextMessageItem(modifier: Modifier = Modifier, text: String, isMe: Boolean) {
+private fun TextMessageItem(
+  modifier: Modifier = Modifier,
+  text: String,
+  isMe: Boolean,
+  isError: Boolean = false,
+) {
   val largeShape = MaterialTheme.shapes.large
   val textColor = if (isMe) {
     MaterialTheme.colorScheme.onSecondaryContainer
@@ -198,23 +206,48 @@ private fun TextMessageItem(modifier: Modifier = Modifier, text: String, isMe: B
         },
       ),
   ) {
-    Text(
+    Row(
       modifier = Modifier
         .padding(16.dp)
         .align(if (isMe) Alignment.CenterEnd else Alignment.CenterStart),
-      text = buildAnnotatedString {
-        if (text.isBlank()) {
-          pushStyle(SpanStyle(color = textColor.copy(alpha = 0.4f)))
-          append(stringResource(id = io.jja08111.gemini.core.ui.R.string.empty_content))
-          pop()
-        } else {
-          append(text)
-        }
-      },
-      style = MaterialTheme.typography.bodyLarge.copy(
-        color = textColor,
-      ),
-    )
+    ) {
+      val informationColor = textColor.copy(alpha = 0.4f)
+      if (isError) {
+        Icon(
+          modifier = Modifier
+            .align(Alignment.CenterVertically)
+            .padding(end = 4.dp),
+          imageVector = Icons.Default.Info,
+          tint = informationColor,
+          contentDescription = null,
+        )
+      }
+      Text(
+        modifier = Modifier.align(Alignment.CenterVertically),
+        text = buildAnnotatedString {
+          when {
+            isError || text.isBlank() -> {
+              pushStyle(SpanStyle(color = informationColor))
+              append(
+                stringResource(
+                  id = if (isError) {
+                    io.jja08111.gemini.core.ui.R.string.something_went_wrong
+                  } else {
+                    io.jja08111.gemini.core.ui.R.string.empty_content
+                  },
+                ),
+              )
+              pop()
+            }
+
+            else -> append(text)
+          }
+        },
+        style = MaterialTheme.typography.bodyLarge.copy(
+          color = textColor,
+        ),
+      )
+    }
   }
 }
 

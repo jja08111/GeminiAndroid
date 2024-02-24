@@ -14,6 +14,7 @@ fun RoomWithRecentMessage.toDomain(): Room {
     messageType != null &&
     messageCreatedAt != null &&
     messageContent != null &&
+    messageIsError != null &&
     messageRole != null
   ) {
     Message(
@@ -22,6 +23,7 @@ fun RoomWithRecentMessage.toDomain(): Room {
       role = Role.of(messageRole),
       content = Content.of(type = messageType, content = messageContent),
       createdAt = Date(messageCreatedAt),
+      isError = messageIsError,
     )
   } else {
     null
