@@ -34,6 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
@@ -164,9 +167,15 @@ private fun MessageItem(modifier: Modifier = Modifier, message: Message) {
 
 private val HorizontalMargin = 40.dp
 
+// TODO: Implement retry feature
 @Composable
 private fun TextMessageItem(modifier: Modifier = Modifier, text: String, isMe: Boolean) {
   val largeShape = MaterialTheme.shapes.large
+  val textColor = if (isMe) {
+    MaterialTheme.colorScheme.onSecondaryContainer
+  } else {
+    MaterialTheme.colorScheme.onPrimaryContainer
+  }
 
   Box(
     modifier = modifier
@@ -193,13 +202,17 @@ private fun TextMessageItem(modifier: Modifier = Modifier, text: String, isMe: B
       modifier = Modifier
         .padding(16.dp)
         .align(if (isMe) Alignment.CenterEnd else Alignment.CenterStart),
-      text = text,
-      style = MaterialTheme.typography.bodyLarge.copy(
-        color = if (isMe) {
-          MaterialTheme.colorScheme.onSecondaryContainer
+      text = buildAnnotatedString {
+        if (text.isBlank()) {
+          pushStyle(SpanStyle(color = textColor.copy(alpha = 0.4f)))
+          append(stringResource(id = io.jja08111.gemini.core.ui.R.string.empty_content))
+          pop()
         } else {
-          MaterialTheme.colorScheme.onPrimaryContainer
-        },
+          append(text)
+        }
+      },
+      style = MaterialTheme.typography.bodyLarge.copy(
+        color = textColor,
       ),
     )
   }

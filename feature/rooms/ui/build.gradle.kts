@@ -13,6 +13,7 @@ android {
 dependencies {
 
   implementation(project(":core:model"))
+  implementation(project(":core:ui"))
   implementation(project(":feature:rooms:data"))
 
   implementation(libs.androidx.activity.compose)

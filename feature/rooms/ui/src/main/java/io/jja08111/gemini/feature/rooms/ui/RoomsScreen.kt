@@ -154,7 +154,9 @@ internal fun RoomTile(modifier: Modifier = Modifier, room: Room, onClick: () -> 
   ) {
     Text(
       text = when (val content = recentMessage?.content) {
-        is TextContent -> content.text
+        is TextContent -> content.text.ifBlank {
+          stringResource(id = io.jja08111.gemini.core.ui.R.string.empty_content)
+        }
         null -> "New chat"
       },
       maxLines = 2,
