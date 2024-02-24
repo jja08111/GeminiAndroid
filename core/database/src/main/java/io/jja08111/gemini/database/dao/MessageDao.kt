@@ -11,7 +11,7 @@ interface MessageDao {
   @Query("SELECT * FROM MessageEntity WHERE room_id = :roomId ORDER BY created_at DESC")
   fun getMessagePagingSource(roomId: String): PagingSource<Int, MessageEntity>
 
-  @Query("SELECT * FROM MessageEntity WHERE room_id = :roomId")
+  @Query("SELECT * FROM MessageEntity WHERE room_id = :roomId ORDER BY created_at ASC")
   suspend fun getAllMessages(roomId: String): List<MessageEntity>
 
   @Insert
