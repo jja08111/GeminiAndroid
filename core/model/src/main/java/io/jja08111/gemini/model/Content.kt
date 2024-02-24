@@ -1,15 +1,14 @@
 package io.jja08111.gemini.model
 
-enum class ContentType(val rawText: String) {
-  Text("text"),
+enum class ContentType {
+  Text,
 }
 
 sealed class Content(val type: ContentType) {
   companion object {
-    fun of(type: String, content: String): Content {
+    fun of(type: ContentType, content: String): Content {
       return when (type) {
-        ContentType.Text.rawText -> TextContent(text = content)
-        else -> throw IllegalArgumentException()
+        ContentType.Text -> TextContent(text = content)
       }
     }
   }
