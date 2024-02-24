@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -121,6 +124,7 @@ internal fun ChatScreen(
             )
           }
         }
+        VerticalGradient()
       }
 
       ActionBar(
@@ -134,7 +138,7 @@ internal fun ChatScreen(
 }
 
 @Composable
-fun BoxScope.EmptyContent() {
+private fun BoxScope.EmptyContent() {
   Text(
     modifier = Modifier.align(Alignment.Center),
     text = stringResource(R.string.feature_chat_ui_empty_content_title),
@@ -312,10 +316,11 @@ private fun ActionBar(
   TextField(
     modifier = Modifier
       .fillMaxWidth()
+      .background(color = MaterialTheme.colorScheme.background)
       .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
     value = inputMessage,
     onValueChange = onInputMessageChange,
-    shape = MaterialTheme.shapes.large,
+    shape = CircleShape,
     maxLines = 5,
     colors = TextFieldDefaults.colors(
       focusedIndicatorColor = Color.Transparent,
@@ -338,5 +343,23 @@ private fun ActionBar(
         }
       }
     },
+  )
+}
+
+@Composable
+private fun BoxScope.VerticalGradient() {
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .align(Alignment.BottomCenter)
+      .height(24.dp)
+      .background(
+        brush = Brush.verticalGradient(
+          colors = listOf(
+            Color.Transparent,
+            MaterialTheme.colorScheme.background,
+          ),
+        ),
+      ),
   )
 }
