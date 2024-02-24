@@ -13,4 +13,7 @@ data class Message(
 ) {
   val isError: Boolean
     get() = state == MessageState.Error
+
+  val isFromUser: Boolean
+    get() = role == Role.User
 }
