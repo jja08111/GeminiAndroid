@@ -49,6 +49,16 @@ class GenerativeChatRepository @Inject constructor(
     initialValue = null,
   )
 
+  init {
+    coroutineScope.launch {
+      // Update state of all messages because the Generating state is still remain when app is killed.
+      messageDao.updateAllMessagesState(
+        oldState = MessageState.Generating,
+        newState = MessageState.Success,
+      )
+    }
+  }
+
   override fun join(roomId: String): Flow<List<Message>> {
     currentRoomId.update { roomId }
     generativeModel.update {
