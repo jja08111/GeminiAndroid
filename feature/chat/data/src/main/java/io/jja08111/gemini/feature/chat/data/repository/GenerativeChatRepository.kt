@@ -9,7 +9,6 @@ import com.google.ai.client.generativeai.type.GenerateContentResponse
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.jja08111.gemini.database.dao.MessageDao
-import io.jja08111.gemini.database.entity.MessageErrorEntity
 import io.jja08111.gemini.database.extension.toDomain
 import io.jja08111.gemini.database.extension.toEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
@@ -27,8 +26,10 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 class GenerativeChatRepository @Inject constructor(
   private val messageDao: MessageDao,
@@ -79,6 +80,7 @@ class GenerativeChatRepository @Inject constructor(
     messageId: String,
     roomId: String,
     role: Role,
+    isError: Boolean = false,
   ) {
     messageDao.insert(
       Message(
@@ -86,6 +88,7 @@ class GenerativeChatRepository @Inject constructor(
         roomId = roomId,
         content = TextContent(message),
         role = role,
+        isError = isError,
       ).toEntity(),
     )
   }
@@ -113,15 +116,15 @@ class GenerativeChatRepository @Inject constructor(
         responseText.append(response.text)
       }
       .onCompletion { throwable ->
-        when {
-          responseText.isNotEmpty() -> insertTextMessage(
+        val isError = throwable != null && throwable !is CancellationException
+        // Should use coroutineScope of repository because throwable can be JobCancellationException
+        coroutineScope.launch {
+          insertTextMessage(
             messageId = id,
             roomId = roomId,
-            message = responseText.toString(),
+            message = if (isError) "" else responseText.toString(),
             role = Role.Model,
-          )
-          throwable != null -> messageDao.update(
-            message = MessageErrorEntity(id = userMessageId, roomId = roomId),
+            isError = isError,
           )
         }
       }
