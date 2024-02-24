@@ -253,6 +253,9 @@ private fun ActionBar(
       unfocusedIndicatorColor = Color.Transparent,
       disabledIndicatorColor = Color.Transparent,
     ),
+    placeholder = {
+      Text(text = stringResource(R.string.feature_chat_ui_message_gemini_placeholder))
+    },
     trailingIcon = {
       IconButton(
         onClick = { onSendClick(inputMessage) },
