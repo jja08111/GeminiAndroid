@@ -1,16 +1,12 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
-import androidx.paging.PagingData
-import com.google.ai.client.generativeai.type.GenerateContentResponse
 import io.jja08111.gemini.model.Message
 import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
-  fun getMessageStream(roomId: String): Flow<PagingData<Message>>
+  fun join(roomId: String): Flow<List<Message>>
 
-  suspend fun join(roomId: String)
-
-  suspend fun sendTextMessage(message: String, id: String): Flow<GenerateContentResponse>
+  suspend fun sendTextMessage(message: String, id: String): Result<Unit>
 
   fun exit()
 }

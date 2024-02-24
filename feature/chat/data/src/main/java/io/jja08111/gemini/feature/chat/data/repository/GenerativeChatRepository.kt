@@ -1,14 +1,11 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import androidx.paging.map
 import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.GenerateContentResponse
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.jja08111.gemini.database.dao.MessageDao
+import io.jja08111.gemini.database.entity.MessageContentEntity
+import io.jja08111.gemini.database.entity.MessageErrorEntity
 import io.jja08111.gemini.database.extension.toDomain
 import io.jja08111.gemini.database.extension.toEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
@@ -20,6 +17,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onCompletion
@@ -27,9 +27,11 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
+import kotlin.coroutines.resume
 
 class GenerativeChatRepository @Inject constructor(
   private val messageDao: MessageDao,
@@ -46,7 +48,7 @@ class GenerativeChatRepository @Inject constructor(
     initialValue = null,
   )
 
-  override suspend fun join(roomId: String) {
+  override fun join(roomId: String): Flow<List<Message>> {
     currentRoomId.update { roomId }
     generativeModel.update {
       GenerativeModel(
@@ -57,78 +59,80 @@ class GenerativeChatRepository @Inject constructor(
         },
       )
     }
-    val contents = messageDao.getAllMessages(roomId).map {
-      val message = it.toDomain()
-      return@map when (message.content) {
-        is TextContent -> content {
-          role = message.role.text
-          text(it.content)
+    val messageStream = messageDao.getAllMessages(roomId).map { stream ->
+      stream.map { it.toDomain() }
+    }
+    coroutineScope.launch {
+      val contents = messageStream.firstOrNull()?.map { message ->
+        when (val content = message.content) {
+          is TextContent -> content {
+            role = message.role.text
+            text(content.text)
+          }
         }
       }
+      if (contents != null) {
+        generativeChat.value?.history?.addAll(contents)
+      }
     }
-    generativeChat.value?.history?.addAll(contents)
+    return messageStream
   }
 
-  override fun getMessageStream(roomId: String): Flow<PagingData<Message>> {
-    return Pager(config = PagingConfig(pageSize = MESSAGE_PAGE_SIZE)) {
-      messageDao.getMessagePagingSource(roomId)
-    }.flow.map { pagingData -> pagingData.map { it.toDomain() } }
-  }
-
-  private suspend fun insertTextMessage(
-    message: String,
-    messageId: String,
-    roomId: String,
-    role: Role,
-    isError: Boolean = false,
-  ) {
-    messageDao.insert(
-      Message(
-        id = messageId,
-        roomId = roomId,
-        content = TextContent(message),
-        role = role,
-        isError = isError,
-      ).toEntity(),
-    )
-  }
-
-  override suspend fun sendTextMessage(message: String, id: String): Flow<GenerateContentResponse> {
-    val roomId = this.currentRoomId.value ?: throwJoinNotCalledError()
-    val chat = this.generativeChat.value ?: throwJoinNotCalledError()
-    val userMessageId = UUID.randomUUID().toString()
-
-    insertTextMessage(
-      message = message,
-      messageId = userMessageId,
-      roomId = roomId,
-      role = Role.User,
-    )
-
+  override suspend fun sendTextMessage(message: String, id: String): Result<Unit> {
+    val chat = generativeChat.value ?: throwJoinNotCalledError()
     val content = content {
       role = Role.User.text
       text(message)
     }
     val responseText = StringBuilder()
-    // TODO: Keep generating response when the user exit the room.
-    return chat
-      .sendMessageStream(content)
-      .onEach { response ->
-        responseText.append(response.text)
+
+    insertUserAndModelInitialMessages(message = message, modelMessageId = id)
+
+    return suspendCancellableCoroutine { continuation ->
+      coroutineScope.launch {
+        chat.sendMessageStream(content)
+          .onEach { response ->
+            if (response.text != null) {
+              responseText.append(response.text)
+              val messageContent = MessageContentEntity(id = id, content = responseText.toString())
+              messageDao.update(messageContent)
+            }
+          }
+          .onCompletion { throwable ->
+            val isError = throwable != null
+            val messageError = MessageErrorEntity(id = id, isError = isError)
+            messageDao.update(messageError)
+            val result = if (throwable != null) Result.failure(throwable) else Result.success(Unit)
+            continuation.resume(result)
+          }
+          .catch { /* Handling exception at the `onCompletion` */ }
+          .collect()
       }
-      .onCompletion { throwable ->
-        val isError = throwable != null && throwable !is CancellationException
-        // Should use coroutineScope of repository because throwable can be JobCancellationException
-        coroutineScope.launch {
-          insertTextMessage(
-            messageId = id,
-            roomId = roomId,
-            message = if (isError) "" else responseText.toString(),
-            role = Role.Model,
-            isError = isError,
-          )
-        }
-      }
+    }
+  }
+
+  private suspend fun insertUserAndModelInitialMessages(message: String, modelMessageId: String) {
+    val roomId = currentRoomId.value ?: throwJoinNotCalledError()
+    val userMessageId = UUID.randomUUID().toString()
+    val createdAt = Date()
+
+    messageDao.insert(
+      Message(
+        id = userMessageId,
+        roomId = roomId,
+        content = TextContent(message),
+        role = Role.User,
+        // Hardcoding minus to place user message front of model message.
+        createdAt = Date(createdAt.time - 1),
+      ).toEntity(),
+      Message(
+        id = modelMessageId,
+        roomId = roomId,
+        role = Role.Model,
+        content = TextContent(text = ""),
+        createdAt = createdAt,
+      ).toEntity(),
+    )
   }
 
   private fun throwJoinNotCalledError(): Nothing {
@@ -138,9 +142,5 @@ class GenerativeChatRepository @Inject constructor(
   override fun exit() {
     currentRoomId.update { null }
     generativeModel.update { null }
-  }
-
-  companion object {
-    private const val MESSAGE_PAGE_SIZE = 30
   }
 }

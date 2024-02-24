@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 
 @Entity
-data class MessageErrorEntity(
+data class MessageContentEntity(
   @ColumnInfo("id") val id: String,
-  @ColumnInfo("is_error") val isError: Boolean,
+  @ColumnInfo("content") val content: String,
 )
