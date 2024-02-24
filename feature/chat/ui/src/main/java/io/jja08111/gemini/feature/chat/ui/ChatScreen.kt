@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -320,7 +319,7 @@ private fun ActionBar(
       .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
     value = inputMessage,
     onValueChange = onInputMessageChange,
-    shape = CircleShape,
+    shape = MaterialTheme.shapes.extraLarge,
     maxLines = 5,
     colors = TextFieldDefaults.colors(
       focusedIndicatorColor = Color.Transparent,
