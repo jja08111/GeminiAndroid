@@ -4,6 +4,7 @@ import java.util.Date
 
 data class Room(
   val id: String,
+  val title: String?,
   val createdAt: Date,
-  val recentMessage: Message?,
+  val activatedAt: Date,
 )

@@ -1,7 +1,7 @@
 package io.jja08111.gemini.model
 
-enum class MessageState {
+enum class ModelResponseState {
   Generating,
   Error,
-  Success,
+  Generated,
 }

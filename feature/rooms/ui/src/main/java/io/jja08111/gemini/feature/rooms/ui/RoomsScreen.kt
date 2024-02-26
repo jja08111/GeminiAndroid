@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import io.jja08111.gemini.model.Room
-import io.jja08111.gemini.model.TextContent
 import java.util.Date
 import kotlin.math.abs
 
@@ -147,23 +146,13 @@ fun Modifier.verticalScrollDisabled() =
 // TODO: Show summarized user message.
 @Composable
 internal fun RoomTile(modifier: Modifier = Modifier, room: Room, onClick: () -> Unit) {
-  val recentMessage = room.recentMessage
   Column(
     modifier = modifier
       .clickable(onClick = onClick)
       .padding(horizontal = 16.dp, vertical = 12.dp),
   ) {
     Text(
-      text = if (recentMessage?.isError == true) {
-        stringResource(id = io.jja08111.gemini.core.ui.R.string.something_went_wrong)
-      } else {
-        when (val content = recentMessage?.content) {
-          is TextContent -> content.text.ifBlank {
-            stringResource(id = io.jja08111.gemini.core.ui.R.string.empty_content)
-          }
-          null -> "New chat"
-        }
-      },
+      text = room.title ?: "New chat",
       maxLines = 2,
       overflow = TextOverflow.Ellipsis,
       style = MaterialTheme.typography.titleMedium.copy(
@@ -171,7 +160,7 @@ internal fun RoomTile(modifier: Modifier = Modifier, room: Room, onClick: () -> 
       ),
     )
     Text(
-      text = (recentMessage?.createdAt ?: room.createdAt).toTimeSpanText(),
+      text = room.activatedAt.toTimeSpanText(),
       style = MaterialTheme.typography.labelLarge.copy(
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
       ),

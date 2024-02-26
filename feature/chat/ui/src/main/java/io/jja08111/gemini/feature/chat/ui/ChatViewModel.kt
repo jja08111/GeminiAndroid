@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jja08111.core.navigation.mobile.ChatMobileDestinations
 import io.jja08111.gemini.core.ui.StringValue
 import io.jja08111.gemini.feature.chat.data.repository.ChatRepository
+import kotlinx.coroutines.flow.first
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.syntax.simple.blockingIntent
@@ -16,7 +17,6 @@ import org.orbitmvi.orbit.syntax.simple.intent
 import org.orbitmvi.orbit.syntax.simple.postSideEffect
 import org.orbitmvi.orbit.syntax.simple.reduce
 import org.orbitmvi.orbit.viewmodel.container
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -30,7 +30,7 @@ class ChatViewModel @Inject constructor(
 
   override val container = container<ChatUiState, ChatSideEffect>(
     ChatUiState(
-      messageStream = chatRepository.join(roomId),
+      messageGroupStream = chatRepository.join(roomId),
     ),
   )
 
@@ -43,10 +43,16 @@ class ChatViewModel @Inject constructor(
 
   fun sendTextMessage(message: String) {
     intent {
-      val id = UUID.randomUUID().toString()
       reduce { state.copy(inputMessage = "") }
-      chatRepository.sendTextMessage(message = message, id = id)
-        .onFailure(::handleChatException)
+
+      val messageGroups = state.messageGroupStream.first()
+      val parentModelResponseId = messageGroups.lastOrNull()?.selectedResponse?.id
+
+      chatRepository.sendTextMessage(
+        message = message,
+        messageGroups = messageGroups,
+        parentModelResponseId = parentModelResponseId,
+      ).onFailure(::handleChatException)
     }
   }
 
@@ -56,6 +62,7 @@ class ChatViewModel @Inject constructor(
       when (throwable) {
         is ResponseStoppedException -> postSideEffect(
           ChatSideEffect.UserMessage(
+            // TODO: 에러 메시지 finishReason으로 디테일하게 바꾸기
             message = StringValue.Resource(
               R.string.feature_chat_ui_response_stopped_message,
               throwable.response.candidates.first().finishReason?.name ?: "",

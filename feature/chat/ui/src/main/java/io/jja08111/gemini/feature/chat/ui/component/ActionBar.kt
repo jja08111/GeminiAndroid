@@ -1,10 +1,12 @@
 package io.jja08111.gemini.feature.chat.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +24,7 @@ import io.jja08111.gemini.feature.chat.ui.R
 internal fun ActionBar(
   inputMessage: String,
   canSend: Boolean,
+  showLoading: Boolean,
   onInputMessageChange: (String) -> Unit,
   onSendClick: (String) -> Unit,
 ) {
@@ -43,15 +46,20 @@ internal fun ActionBar(
       Text(text = stringResource(R.string.feature_chat_ui_message_gemini_placeholder))
     },
     trailingIcon = {
-      if (canSend) {
-        IconButton(
-          onClick = { onSendClick(inputMessage) },
-        ) {
-          Icon(
-            modifier = Modifier.padding(8.dp),
-            imageVector = Icons.AutoMirrored.Filled.Send,
-            contentDescription = "Send message",
-          )
+      Row {
+        if (showLoading) {
+          CircularProgressIndicator()
+        }
+        if (canSend) {
+          IconButton(
+            onClick = { onSendClick(inputMessage) },
+          ) {
+            Icon(
+              modifier = Modifier.padding(8.dp),
+              imageVector = Icons.AutoMirrored.Filled.Send,
+              contentDescription = "Send message",
+            )
+          }
         }
       }
     },

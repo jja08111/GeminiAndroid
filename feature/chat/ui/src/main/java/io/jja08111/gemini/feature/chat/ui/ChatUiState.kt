@@ -1,15 +1,15 @@
 package io.jja08111.gemini.feature.chat.ui
 
-import io.jja08111.gemini.model.Message
+import io.jja08111.gemini.model.MessageGroup
+import io.jja08111.gemini.model.ModelResponseState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapLatest
 
 data class ChatUiState(
-  val messageStream: Flow<List<Message>>,
+  val messageGroupStream: Flow<List<MessageGroup>>,
   val inputMessage: String = "",
 ) {
-  val isGenerating: Boolean
-    get() = false
-
-  val canSendMessage: Boolean
-    get() = !isGenerating && inputMessage.isNotEmpty()
+  val isGenerating: Flow<Boolean> = messageGroupStream.mapLatest { messageGroup ->
+    messageGroup.lastOrNull()?.selectedResponse?.state == ModelResponseState.Generating
+  }
 }

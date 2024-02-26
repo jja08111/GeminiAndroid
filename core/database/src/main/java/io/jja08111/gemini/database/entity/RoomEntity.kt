@@ -4,8 +4,11 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity
+@Entity(
+  tableName = "room",
+)
 data class RoomEntity(
   @PrimaryKey val id: String,
+  @ColumnInfo("title") val title: String?,
   @ColumnInfo("created_at") val createdAt: Long,
 )

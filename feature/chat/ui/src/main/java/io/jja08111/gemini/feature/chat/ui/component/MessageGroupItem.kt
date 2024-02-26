@@ -4,13 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,19 +28,30 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.jja08111.gemini.core.ui.R
-import io.jja08111.gemini.model.Message
-import io.jja08111.gemini.model.MessageState
-import io.jja08111.gemini.model.TextContent
+import io.jja08111.gemini.model.MessageGroup
+import io.jja08111.gemini.model.ModelResponseState
 
 @Composable
-internal fun MessageItem(modifier: Modifier = Modifier, message: Message) {
-  when (val content = message.content) {
-    is TextContent -> TextMessageItem(
-      modifier = modifier,
-      text = content.text,
-      isMe = message.isFromUser,
-      state = message.state,
+internal fun MessageGroupItem(modifier: Modifier = Modifier, messageGroup: MessageGroup) {
+  val modelResponse = messageGroup.selectedResponse
+  val modelResponseState = modelResponse.state
+
+  Column(
+    modifier = modifier,
+  ) {
+    Spacer(modifier = Modifier.padding(2.dp))
+    TextMessageItem(
+      text = messageGroup.prompt.text,
+      isMe = true,
     )
+    Spacer(modifier = Modifier.padding(4.dp))
+    TextMessageItem(
+      text = modelResponse.text,
+      isMe = false,
+      isLoading = modelResponseState == ModelResponseState.Generating,
+      isError = modelResponseState == ModelResponseState.Error,
+    )
+    Spacer(modifier = Modifier.padding(2.dp))
   }
 }
 
@@ -48,11 +59,12 @@ private val HorizontalMargin = 40.dp
 
 // TODO: Implement retry feature
 @Composable
-private fun TextMessageItem(
+private fun ColumnScope.TextMessageItem(
   modifier: Modifier = Modifier,
   text: String,
   isMe: Boolean,
-  state: MessageState,
+  isLoading: Boolean = false,
+  isError: Boolean = false,
 ) {
   val largeShape = MaterialTheme.shapes.large
   val textColor = if (isMe) {
@@ -63,7 +75,6 @@ private fun TextMessageItem(
 
   Box(
     modifier = modifier
-      .wrapContentWidth(align = if (isMe) Alignment.End else Alignment.Start)
       .padding(
         start = if (isMe) HorizontalMargin else 0.dp,
         end = if (isMe) 0.dp else HorizontalMargin,
@@ -80,7 +91,8 @@ private fun TextMessageItem(
         } else {
           MaterialTheme.colorScheme.primaryContainer
         },
-      ),
+      )
+      .align(alignment = if (isMe) Alignment.End else Alignment.Start),
   ) {
     Row(
       modifier = Modifier
@@ -88,14 +100,8 @@ private fun TextMessageItem(
         .align(if (isMe) Alignment.CenterEnd else Alignment.CenterStart),
     ) {
       when {
-        state == MessageState.Error -> {
-          ErrorMessageItem(textColor = textColor.copy(alpha = 0.4f))
-        }
-
-        state == MessageState.Generating && text.isEmpty() -> {
-          Shimmer()
-        }
-
+        isError -> ErrorMessageItem(textColor = textColor.copy(alpha = 0.4f))
+        isLoading && text.isEmpty() -> Shimmer()
         else -> {
           Text(
             modifier = Modifier.align(Alignment.CenterVertically),

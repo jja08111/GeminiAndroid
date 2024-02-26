@@ -26,7 +26,7 @@ class LocalRoomRepository @Inject constructor(
   override suspend fun createRoom(): Result<String> {
     return runCatching {
       val id = UUID.randomUUID().toString()
-      roomDao.insert(RoomEntity(id = id, createdAt = Date().time))
+      roomDao.insert(RoomEntity(id = id, createdAt = Date().time, title = null))
       id
     }
   }

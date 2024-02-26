@@ -1,32 +1,34 @@
 package io.jja08111.gemini.database.extension
 
-import io.jja08111.gemini.database.entity.MessageEntity
-import io.jja08111.gemini.model.Content
-import io.jja08111.gemini.model.Message
-import io.jja08111.gemini.model.TextContent
+import io.jja08111.gemini.database.entity.ModelResponseEntity
+import io.jja08111.gemini.database.entity.ModelResponseStateEntity
+import io.jja08111.gemini.database.entity.PromptEntity
+import io.jja08111.gemini.model.ModelResponse
+import io.jja08111.gemini.model.ModelResponseState
+import io.jja08111.gemini.model.Prompt
 import java.util.Date
 
-fun Message.toEntity(): MessageEntity {
-  return MessageEntity(
+fun PromptEntity.toDomain() =
+  Prompt(
     id = id,
     roomId = roomId,
-    content = when (val content = content) {
-      is TextContent -> content.text
-    },
-    createdAt = createdAt.time,
-    role = role,
-    type = content.type,
-    state = state,
-  )
-}
-
-fun MessageEntity.toDomain(): Message {
-  return Message(
-    id = id,
-    roomId = roomId,
-    content = Content.of(type = type, content = content),
+    text = text,
     createdAt = Date(createdAt),
-    role = role,
-    state = state,
   )
-}
+
+fun ModelResponseEntity.toDomain() =
+  ModelResponse(
+    id = id,
+    roomId = roomId,
+    selected = selected,
+    text = text,
+    state = state.toDomain(),
+    createdAt = Date(createdAt),
+  )
+
+fun ModelResponseStateEntity.toDomain() =
+  when (this) {
+    ModelResponseStateEntity.Generating -> ModelResponseState.Generating
+    ModelResponseStateEntity.Error -> ModelResponseState.Error
+    ModelResponseStateEntity.Generated -> ModelResponseState.Generated
+  }

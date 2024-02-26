@@ -3,11 +3,14 @@ package io.jja08111.gemini.feature.chat.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -26,8 +29,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -38,9 +46,8 @@ import androidx.compose.ui.unit.dp
 import io.jja08111.gemini.core.ui.rememberPrevious
 import io.jja08111.gemini.feature.chat.ui.component.ActionBar
 import io.jja08111.gemini.feature.chat.ui.component.GotoBottomButton
-import io.jja08111.gemini.feature.chat.ui.component.MessageItem
-import io.jja08111.gemini.model.Message
-import io.jja08111.gemini.model.TextContent
+import io.jja08111.gemini.feature.chat.ui.component.MessageGroupItem
+import io.jja08111.gemini.model.MessageGroup
 import kotlinx.coroutines.launch
 
 // TODO: Show keyboard when enter this screen
@@ -53,27 +60,37 @@ internal fun ChatScreen(
   onInputUpdate: (String) -> Unit,
   onSendClick: (String) -> Unit,
 ) {
-  val messages by uiState.messageStream.collectAsState(initial = emptyList())
-  val coroutineScope = rememberCoroutineScope()
-  val lastMessageText = (messages.lastOrNull()?.content as? TextContent)?.text
-  val keyboardController = LocalSoftwareKeyboardController.current
+  val messageGroups by uiState.messageGroupStream.collectAsState(initial = emptyList())
+  val isGenerating by uiState.isGenerating.collectAsState(initial = false)
+  val canSendMessage by rememberUpdatedState(!isGenerating && uiState.inputMessage.isNotEmpty())
   val previousCanScrollForward = rememberPrevious(listState.canScrollForward)
-
-  LaunchedEffect(messages.size) {
-    if (messages.isNotEmpty()) {
-      listState.scrollToBottom()
+  val coroutineScope = rememberCoroutineScope()
+  val keyboardController = LocalSoftwareKeyboardController.current
+  var fetched by remember { mutableStateOf(false) }
+  val showGotoBottomButton by remember {
+    derivedStateOf {
+      listState.firstVisibleItemIndex != listState.layoutInfo.totalItemsCount - 1 ||
+        listState.firstVisibleItemScrollOffset > 80
     }
   }
+  val lastResponseText = messageGroups.lastOrNull()?.selectedResponse?.text
 
-  LaunchedEffect(lastMessageText?.length) {
-    if (previousCanScrollForward == true || lastMessageText == null) {
+  LaunchedEffect(lastResponseText?.length) {
+    if (previousCanScrollForward == true || lastResponseText == null) {
       return@LaunchedEffect
     }
     val lastItemIndex = listState.layoutInfo.totalItemsCount - 1
     if (listState.firstVisibleItemIndex == lastItemIndex) {
-      listState.scrollToBottom()
+      listState.scrollToBottom(animated = true)
     } else {
-      listState.scrollToLastUserMessage()
+      listState.scrollToLastMessageGroup(animated = true)
+    }
+  }
+
+  LaunchedEffect(messageGroups.size) {
+    if (messageGroups.isNotEmpty()) {
+      listState.scrollToLastMessageGroup(animated = fetched)
+      fetched = true
     }
   }
 
@@ -94,27 +111,27 @@ internal fun ChatScreen(
     },
   ) { innerPadding ->
     Column(modifier = Modifier.padding(innerPadding)) {
-      Box(
+      BoxWithConstraints(
         modifier = Modifier
           .fillMaxWidth()
           .weight(1f),
       ) {
-        if (messages.isEmpty()) {
+        if (messageGroups.isEmpty()) {
           EmptyContent()
         } else {
-          MessageList(
+          MessageGroupList(
             modifier = Modifier.fillMaxSize(),
             listState = listState,
-            messages = messages,
+            messageGroups = messageGroups,
           )
-          if (listState.canScrollForward) {
+          if (showGotoBottomButton) {
             GotoBottomButton(
               modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
               onClick = {
                 coroutineScope.launch {
-                  listState.scrollToBottom()
+                  listState.scrollToLastMessageGroup(animated = true)
                 }
               },
             )
@@ -124,7 +141,8 @@ internal fun ChatScreen(
       }
       ActionBar(
         inputMessage = uiState.inputMessage,
-        canSend = uiState.canSendMessage,
+        canSend = canSendMessage,
+        showLoading = isGenerating,
         onSendClick = {
           onSendClick(it)
           keyboardController?.hide()
@@ -147,27 +165,26 @@ private fun BoxScope.EmptyContent() {
 }
 
 @Composable
-private fun BoxScope.MessageList(
+private fun BoxWithConstraintsScope.MessageGroupList(
   modifier: Modifier = Modifier,
   listState: LazyListState,
-  messages: List<Message>,
+  messageGroups: List<MessageGroup>,
 ) {
   LazyColumn(
     modifier = modifier,
     state = listState,
-    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp),
   ) {
     items(
-      items = messages,
-      key = { it.id },
-      contentType = { it.role },
-    ) { message ->
-      MessageItem(
+      items = messageGroups,
+      key = { it.prompt.id },
+    ) { messageGroup ->
+      val isLast = messageGroup == messageGroups.lastOrNull()
+      MessageGroupItem(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(bottom = 8.dp)
-          .align(if (message.isFromUser) Alignment.CenterEnd else Alignment.CenterStart),
-        message = message,
+          .heightIn(min = if (isLast) maxHeight else 0.dp),
+        messageGroup = messageGroup,
       )
     }
   }
@@ -191,16 +208,26 @@ private fun BoxScope.VerticalGradient() {
   )
 }
 
-private suspend fun LazyListState.scrollToLastUserMessage() {
+private suspend fun LazyListState.scrollToLastMessageGroup(animated: Boolean = false) {
   val itemCount = layoutInfo.totalItemsCount
   if (itemCount > 1) {
-    scrollToItem(itemCount - 2)
+    val targetIndex = itemCount - 1
+    if (animated) {
+      animateScrollToItem(targetIndex)
+    } else {
+      scrollToItem(targetIndex)
+    }
   }
 }
 
-private suspend fun LazyListState.scrollToBottom() {
+private suspend fun LazyListState.scrollToBottom(animated: Boolean = false) {
   val itemCount = layoutInfo.totalItemsCount
   if (itemCount > 1) {
-    scrollToItem(itemCount - 1, scrollOffset = Int.MAX_VALUE)
+    val targetIndex = itemCount - 1
+    if (animated) {
+      animateScrollToItem(targetIndex, scrollOffset = Int.MAX_VALUE)
+    } else {
+      scrollToItem(targetIndex, scrollOffset = Int.MAX_VALUE)
+    }
   }
 }

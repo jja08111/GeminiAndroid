@@ -7,7 +7,7 @@ import androidx.room.OnConflictStrategy.Companion.REPLACE
 import androidx.room.Query
 import androidx.room.Transaction
 import io.jja08111.gemini.database.entity.RoomEntity
-import io.jja08111.gemini.database.entity.RoomWithRecentMessage
+import io.jja08111.gemini.database.entity.RoomWithActivatedTime
 
 @Dao
 interface RoomDao {
@@ -15,26 +15,20 @@ interface RoomDao {
   @Query(
     """
       SELECT 
-        RoomEntity.*,
-        MessageEntity.id AS message_id,
-        MessageEntity.room_id AS message_room_id, 
-        MessageEntity.role AS message_role,
-        MessageEntity.content AS message_content, 
-        MessageEntity.type AS message_type,
-        MessageEntity.state AS message_state, 
-        MessageEntity.created_at AS message_created_at
-      FROM RoomEntity
-      LEFT JOIN (
-        SELECT room_id, MAX(created_at) AS maxCreatedAt
-        FROM MessageEntity
-        GROUP BY room_id
-      ) AS recentMessage ON RoomEntity.id = recentMessage.room_id
-      LEFT JOIN MessageEntity ON recentMessage.room_id = MessageEntity.room_id 
-        AND recentMessage.maxCreatedAt = MessageEntity.created_at
-      ORDER BY COALESCE(recentMessage.maxCreatedAt, RoomEntity.created_at) DESC
+        room.*,
+        COALESCE(prompt.created_at, room.created_at) AS activated_at
+      FROM room
+        LEFT JOIN (
+          SELECT room_id, MAX(created_at) AS maxCreatedAt
+          FROM prompt
+          GROUP BY room_id
+        ) AS recent_prompt ON room.id = recent_prompt.room_id
+        LEFT JOIN prompt ON recent_prompt.room_id = prompt.room_id 
+          AND recent_prompt.maxCreatedAt = prompt.created_at
+      ORDER BY COALESCE(recent_prompt.maxCreatedAt, room.created_at) DESC
     """,
   )
-  fun getRooms(): PagingSource<Int, RoomWithRecentMessage>
+  fun getRooms(): PagingSource<Int, RoomWithActivatedTime>
 
   @Insert(onConflict = REPLACE)
   suspend fun insert(roomEntity: RoomEntity)
