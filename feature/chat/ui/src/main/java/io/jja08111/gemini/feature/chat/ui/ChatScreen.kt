@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,8 +60,7 @@ internal fun ChatScreen(
   onSendClick: (String) -> Unit,
 ) {
   val messageGroups by uiState.messageGroupStream.collectAsState(initial = emptyList())
-  val isGenerating by uiState.isGenerating.collectAsState(initial = false)
-  val canSendMessage by rememberUpdatedState(!isGenerating && uiState.inputMessage.isNotEmpty())
+  val isGenerating = uiState.isGenerating
   val previousCanScrollForward = rememberPrevious(listState.canScrollForward)
   val coroutineScope = rememberCoroutineScope()
   val keyboardController = LocalSoftwareKeyboardController.current
@@ -73,10 +71,10 @@ internal fun ChatScreen(
         listState.firstVisibleItemScrollOffset > 80
     }
   }
-  val lastResponseText = messageGroups.lastOrNull()?.selectedResponse?.text
+  val generatingMessage = uiState.generatingMessage
 
-  LaunchedEffect(lastResponseText?.length) {
-    if (previousCanScrollForward == true || lastResponseText == null) {
+  LaunchedEffect(generatingMessage?.length) {
+    if (previousCanScrollForward == true || generatingMessage == null) {
       return@LaunchedEffect
     }
     val lastItemIndex = listState.layoutInfo.totalItemsCount - 1
@@ -123,6 +121,7 @@ internal fun ChatScreen(
             modifier = Modifier.fillMaxSize(),
             listState = listState,
             messageGroups = messageGroups,
+            generatingMessage = generatingMessage,
           )
           if (showGotoBottomButton) {
             GotoBottomButton(
@@ -141,7 +140,7 @@ internal fun ChatScreen(
       }
       ActionBar(
         inputMessage = uiState.inputMessage,
-        canSend = canSendMessage,
+        canSend = uiState.canSendMessage,
         showLoading = isGenerating,
         onSendClick = {
           onSendClick(it)
@@ -169,6 +168,7 @@ private fun BoxWithConstraintsScope.MessageGroupList(
   modifier: Modifier = Modifier,
   listState: LazyListState,
   messageGroups: List<MessageGroup>,
+  generatingMessage: String?,
 ) {
   LazyColumn(
     modifier = modifier,
@@ -180,11 +180,14 @@ private fun BoxWithConstraintsScope.MessageGroupList(
       key = { it.prompt.id },
     ) { messageGroup ->
       val isLast = messageGroup == messageGroups.lastOrNull()
+      val isGenerating = messageGroup.selectedResponse.isGenerating
+
       MessageGroupItem(
         modifier = Modifier
           .fillMaxWidth()
           .heightIn(min = if (isLast) maxHeight else 0.dp),
         messageGroup = messageGroup,
+        generatingMessage = if (isLast && isGenerating) generatingMessage else null,
       )
     }
   }

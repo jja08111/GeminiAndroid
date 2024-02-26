@@ -8,7 +8,10 @@ import com.google.ai.client.generativeai.type.ServerException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jja08111.core.navigation.mobile.ChatMobileDestinations
 import io.jja08111.gemini.core.ui.StringValue
+import io.jja08111.gemini.feature.chat.data.model.MessageResponseData
+import io.jja08111.gemini.feature.chat.data.model.MessageResponseFinished
 import io.jja08111.gemini.feature.chat.data.repository.ChatRepository
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
@@ -43,16 +46,28 @@ class ChatViewModel @Inject constructor(
 
   fun sendTextMessage(message: String) {
     intent {
-      reduce { state.copy(inputMessage = "") }
+      reduce { state.copy(inputMessage = "", generatingMessage = "") }
 
       val messageGroups = state.messageGroupStream.first()
       val parentModelResponseId = messageGroups.lastOrNull()?.selectedResponse?.id
+      val textBuilder: StringBuilder = StringBuilder()
 
       chatRepository.sendTextMessage(
         message = message,
         messageGroups = messageGroups,
         parentModelResponseId = parentModelResponseId,
-      ).onFailure(::handleChatException)
+      ).catch {
+        handleChatException(it)
+      }.collect { response ->
+        when (response) {
+          is MessageResponseData -> if (response.content.text != null) {
+            textBuilder.append(response.content.text)
+            reduce { state.copy(generatingMessage = textBuilder.toString()) }
+          }
+
+          MessageResponseFinished -> reduce { state.copy(generatingMessage = null) }
+        }
+      }
     }
   }
 

@@ -32,7 +32,11 @@ import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.ModelResponseState
 
 @Composable
-internal fun MessageGroupItem(modifier: Modifier = Modifier, messageGroup: MessageGroup) {
+internal fun MessageGroupItem(
+  modifier: Modifier = Modifier,
+  messageGroup: MessageGroup,
+  generatingMessage: String?,
+) {
   val modelResponse = messageGroup.selectedResponse
   val modelResponseState = modelResponse.state
 
@@ -46,7 +50,7 @@ internal fun MessageGroupItem(modifier: Modifier = Modifier, messageGroup: Messa
     )
     Spacer(modifier = Modifier.padding(4.dp))
     TextMessageItem(
-      text = modelResponse.text,
+      text = generatingMessage ?: modelResponse.text,
       isMe = false,
       isLoading = modelResponseState == ModelResponseState.Generating,
       isError = modelResponseState == ModelResponseState.Error,

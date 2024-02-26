@@ -1,5 +1,6 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
+import io.jja08111.gemini.feature.chat.data.model.MessageResponse
 import io.jja08111.gemini.model.MessageGroup
 import kotlinx.coroutines.flow.Flow
 
@@ -10,7 +11,7 @@ interface ChatRepository {
     message: String,
     messageGroups: List<MessageGroup>,
     parentModelResponseId: String?,
-  ): Result<Unit>
+  ): Flow<MessageResponse>
 
   fun exit()
 }

@@ -1,7 +1,6 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
 import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.Candidate
 import com.google.ai.client.generativeai.type.asTextOrNull
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
@@ -9,19 +8,22 @@ import io.jja08111.gemini.database.dao.MessageDao
 import io.jja08111.gemini.database.entity.ModelResponseEntity
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.database.entity.PromptEntity
-import io.jja08111.gemini.database.entity.partial.ModelResponseContentPartial
+import io.jja08111.gemini.database.entity.partial.ModelResponsePartial
 import io.jja08111.gemini.database.extension.toDomain
 import io.jja08111.gemini.feature.chat.data.BuildConfig
 import io.jja08111.gemini.feature.chat.data.extension.toContents
 import io.jja08111.gemini.feature.chat.data.model.CANDIDATE_COUNT
+import io.jja08111.gemini.feature.chat.data.model.MessageResponse
+import io.jja08111.gemini.feature.chat.data.model.MessageResponseData
+import io.jja08111.gemini.feature.chat.data.model.MessageResponseFinished
 import io.jja08111.gemini.feature.chat.data.model.ROLE_USER
 import io.jja08111.gemini.model.MessageGroup
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onCompletion
@@ -72,7 +74,6 @@ class GenerativeChatRepository @Inject constructor(
       )
     }
     return messageDao.getPromptAndResponses(roomId).mapLatest { promptAndMessages ->
-      // TODO: 생성되고 있는 응답은 UI에서 컨트롤 하기. 여기에서 계속 트리를 따라 순회하기 때문에 부하가 너무 큼
       val result = mutableListOf<MessageGroup>()
       promptAndMessages.forEach { (prompt, responses) ->
         val lastResponse = result.lastOrNull()?.selectedResponse
@@ -95,7 +96,7 @@ class GenerativeChatRepository @Inject constructor(
     message: String,
     messageGroups: List<MessageGroup>,
     parentModelResponseId: String?,
-  ): Result<Unit> {
+  ): Flow<MessageResponse> {
     val chat = generativeChat.value ?: throwJoinNotCalledError()
     val content = content {
       role = ROLE_USER
@@ -116,11 +117,20 @@ class GenerativeChatRepository @Inject constructor(
     chat.history.addAll(history)
 
     return suspendCancellableCoroutine { continuation ->
+      val responseFlow = MutableSharedFlow<MessageResponse>()
+      continuation.resume(responseFlow)
+
       coroutineScope.launch {
         chat.sendMessageStream(content)
           .onEach { response ->
-            val contentPartials = response.candidates.toResponseContentPartials(responseHolders)
-            messageDao.updateAll(contentPartials)
+            responseFlow.emit(MessageResponseData(response))
+            response.candidates.mapIndexedNotNull map@{ index, candidate ->
+              val responseHolder = responseHolders[index]
+              val parts = candidate.content.parts
+              val text = parts.firstOrNull()?.asTextOrNull() ?: return@map null
+              val responseTextBuilder = responseHolder.textBuilder
+              responseTextBuilder.append(text)
+            }
           }
           .onCompletion { throwable ->
             val isError = throwable != null
@@ -129,11 +139,16 @@ class GenerativeChatRepository @Inject constructor(
             } else {
               ModelResponseStateEntity.Generated
             }
-            messageDao.updateResponseStatesBy(promptId = promptId, state = state)
-            val result = if (throwable != null) Result.failure(throwable) else Result.success(Unit)
-            continuation.resume(result)
+            val modelResponsePartials = responseHolders.map { holder ->
+              ModelResponsePartial(
+                id = holder.id,
+                text = holder.textBuilder.toString(),
+                state = state,
+              )
+            }
+            messageDao.updateAll(modelResponsePartials)
+            responseFlow.emit(MessageResponseFinished)
           }
-          .catch { /* Handling exception at the `onCompletion` */ }
           .collect()
       }
     }
@@ -168,24 +183,6 @@ class GenerativeChatRepository @Inject constructor(
         )
       },
     )
-  }
-
-  private fun List<Candidate>.toResponseContentPartials(
-    responseHolders: List<ModelResponseHolder>,
-  ): List<ModelResponseContentPartial> {
-    return mapIndexedNotNull map@{ index, candidate ->
-      val responseHolder = responseHolders[index]
-      val parts = candidate.content.parts
-      val text = parts.firstOrNull()?.asTextOrNull() ?: return@map null
-      val responseTextBuilder = responseHolder.textBuilder
-
-      responseTextBuilder.append(text)
-
-      return@map ModelResponseContentPartial(
-        id = responseHolder.id,
-        text = responseTextBuilder.toString(),
-      )
-    }
   }
 
   private fun throwJoinNotCalledError(): Nothing {
