@@ -1,20 +1,19 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
 import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.Candidate
-import com.google.ai.client.generativeai.type.asTextOrNull
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.jja08111.gemini.database.dao.MessageDao
 import io.jja08111.gemini.database.entity.ModelResponseEntity
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.database.entity.PromptEntity
-import io.jja08111.gemini.database.entity.partial.ModelResponseContentPartial
-import io.jja08111.gemini.database.extension.toDomain
 import io.jja08111.gemini.feature.chat.data.BuildConfig
+import io.jja08111.gemini.feature.chat.data.extension.convertToMessageGroups
 import io.jja08111.gemini.feature.chat.data.extension.toContents
+import io.jja08111.gemini.feature.chat.data.extension.toResponseContentPartials
 import io.jja08111.gemini.feature.chat.data.model.CANDIDATE_COUNT
 import io.jja08111.gemini.feature.chat.data.model.ROLE_USER
+import io.jja08111.gemini.feature.chat.data.model.ResponseTextBuilder
 import io.jja08111.gemini.model.MessageGroup
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,24 +70,7 @@ class GenerativeChatRepository @Inject constructor(
         },
       )
     }
-    return messageDao.getPromptAndResponses(roomId).mapLatest { promptAndMessages ->
-      // TODO: 생성되고 있는 응답은 UI에서 컨트롤 하기. 여기에서 계속 트리를 따라 순회하기 때문에 부하가 너무 큼
-      val result = mutableListOf<MessageGroup>()
-      promptAndMessages.forEach { (prompt, responses) ->
-        val lastResponse = result.lastOrNull()?.selectedResponse
-        if (result.isEmpty() || prompt.parentModelResponseId == lastResponse?.id) {
-          val messageGroup = MessageGroup(
-            prompt = prompt.toDomain(),
-            selectedResponse = responses.find { it.selected }?.toDomain() ?: error(
-              "There is no selected response.",
-            ),
-            responseCount = responses.size,
-          )
-          result.add(messageGroup)
-        }
-      }
-      result
-    }
+    return messageDao.getPromptAndResponses(roomId).mapLatest(::convertToMessageGroups)
   }
 
   override suspend fun sendTextMessage(
@@ -102,12 +84,12 @@ class GenerativeChatRepository @Inject constructor(
       text(message)
     }
     val promptId = UUID.randomUUID().toString()
-    val responseHolders = List(CANDIDATE_COUNT) { ModelResponseHolder() }
+    val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
 
     insertInitialMessageGroup(
       prompt = message,
       promptId = promptId,
-      responseIds = responseHolders.map { it.id },
+      responseIds = responseTextBuilders.map { it.id },
       parentModelResponseId = parentModelResponseId,
     )
 
@@ -119,7 +101,9 @@ class GenerativeChatRepository @Inject constructor(
       coroutineScope.launch {
         chat.sendMessageStream(content)
           .onEach { response ->
-            val contentPartials = response.candidates.toResponseContentPartials(responseHolders)
+            // TODO: 생성되고 있는 응답은 UI에서 컨트롤 하기. DB에 값을 갱신하는 것은 부하가 크고 UI 모델을 다시 생성하게 함
+            val candidates = response.candidates
+            val contentPartials = candidates.toResponseContentPartials(responseTextBuilders)
             messageDao.updateAll(contentPartials)
           }
           .onCompletion { throwable ->
@@ -170,24 +154,6 @@ class GenerativeChatRepository @Inject constructor(
     )
   }
 
-  private fun List<Candidate>.toResponseContentPartials(
-    responseHolders: List<ModelResponseHolder>,
-  ): List<ModelResponseContentPartial> {
-    return mapIndexedNotNull map@{ index, candidate ->
-      val responseHolder = responseHolders[index]
-      val parts = candidate.content.parts
-      val text = parts.firstOrNull()?.asTextOrNull() ?: return@map null
-      val responseTextBuilder = responseHolder.textBuilder
-
-      responseTextBuilder.append(text)
-
-      return@map ModelResponseContentPartial(
-        id = responseHolder.id,
-        text = responseTextBuilder.toString(),
-      )
-    }
-  }
-
   private fun throwJoinNotCalledError(): Nothing {
     error("Call join before using sendTextMessage")
   }
@@ -197,8 +163,3 @@ class GenerativeChatRepository @Inject constructor(
     generativeModel.update { null }
   }
 }
-
-private data class ModelResponseHolder(
-  val id: String = UUID.randomUUID().toString(),
-  val textBuilder: StringBuilder = StringBuilder(),
-)
