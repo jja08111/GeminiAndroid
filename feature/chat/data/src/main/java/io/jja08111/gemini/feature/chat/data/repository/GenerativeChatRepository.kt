@@ -117,6 +117,7 @@ class GenerativeChatRepository @Inject constructor(
     chat.history.addAll(history)
 
     return suspendCancellableCoroutine { continuation ->
+      // TODO: Move responseFlow into coroutineScope and cancel coroutineScope's Job when onCompletion called
       val responseFlow = MutableSharedFlow<MessageResponse>()
       continuation.resume(responseFlow)
 
