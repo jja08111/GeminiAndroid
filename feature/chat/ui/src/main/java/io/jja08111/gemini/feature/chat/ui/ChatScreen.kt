@@ -80,7 +80,7 @@ internal fun ChatScreen(
     }
     val lastItemIndex = listState.layoutInfo.totalItemsCount - 1
     if (listState.firstVisibleItemIndex == lastItemIndex) {
-      listState.scrollToBottom(animated = false)
+      listState.scrollToBottom(animated = true)
     } else {
       listState.scrollToLastMessageGroup(animated = true)
     }
@@ -214,7 +214,7 @@ private fun BoxScope.VerticalGradient() {
 
 private suspend fun LazyListState.scrollToLastMessageGroup(animated: Boolean = false) {
   val itemCount = layoutInfo.totalItemsCount
-  if (itemCount > 0) {
+  if (itemCount > 1) {
     val targetIndex = itemCount - 1
     if (animated) {
       animateScrollToItem(targetIndex)
@@ -226,7 +226,7 @@ private suspend fun LazyListState.scrollToLastMessageGroup(animated: Boolean = f
 
 private suspend fun LazyListState.scrollToBottom(animated: Boolean = false) {
   val itemCount = layoutInfo.totalItemsCount
-  if (itemCount > 0) {
+  if (itemCount > 1) {
     val targetIndex = itemCount - 1
     if (animated) {
       animateScrollToItem(targetIndex, scrollOffset = Int.MAX_VALUE)
