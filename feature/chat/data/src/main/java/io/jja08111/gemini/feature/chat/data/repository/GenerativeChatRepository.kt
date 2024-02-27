@@ -104,7 +104,7 @@ class GenerativeChatRepository @Inject constructor(
     val promptId = UUID.randomUUID().toString()
     val responseHolders = List(CANDIDATE_COUNT) { ModelResponseHolder() }
 
-    insertInitialPromptAndResponses(
+    insertInitialMessageGroup(
       prompt = message,
       promptId = promptId,
       responseIds = responseHolders.map { it.id },
@@ -139,7 +139,7 @@ class GenerativeChatRepository @Inject constructor(
     }
   }
 
-  private suspend fun insertInitialPromptAndResponses(
+  private suspend fun insertInitialMessageGroup(
     prompt: String,
     promptId: String,
     responseIds: List<String>,
