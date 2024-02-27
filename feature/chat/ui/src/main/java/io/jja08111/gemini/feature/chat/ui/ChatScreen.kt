@@ -28,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.jja08111.gemini.core.ui.rememberPrevious
 import io.jja08111.gemini.feature.chat.ui.component.ActionBar
 import io.jja08111.gemini.feature.chat.ui.component.GotoBottomButton
@@ -60,8 +60,8 @@ internal fun ChatScreen(
   onInputUpdate: (String) -> Unit,
   onSendClick: (String) -> Unit,
 ) {
-  val messageGroups by uiState.messageGroupStream.collectAsState(initial = emptyList())
-  val isGenerating by uiState.isGenerating.collectAsState(initial = false)
+  val messageGroups by uiState.messageGroupStream.collectAsStateWithLifecycle(emptyList())
+  val isGenerating by uiState.isGenerating.collectAsStateWithLifecycle(false)
   val canSendMessage by rememberUpdatedState(!isGenerating && uiState.inputMessage.isNotEmpty())
   val previousCanScrollForward = rememberPrevious(listState.canScrollForward)
   val coroutineScope = rememberCoroutineScope()
