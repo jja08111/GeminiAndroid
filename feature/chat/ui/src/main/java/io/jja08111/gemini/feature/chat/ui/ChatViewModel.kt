@@ -3,13 +3,16 @@ package io.jja08111.gemini.feature.chat.ui
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.ai.client.generativeai.type.ResponseStoppedException
 import com.google.ai.client.generativeai.type.ServerException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jja08111.core.navigation.mobile.ChatMobileDestinations
 import io.jja08111.gemini.core.ui.StringValue
 import io.jja08111.gemini.feature.chat.data.repository.ChatRepository
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.syntax.simple.blockingIntent
@@ -30,7 +33,11 @@ class ChatViewModel @Inject constructor(
 
   override val container = container<ChatUiState, ChatSideEffect>(
     ChatUiState(
-      messageGroupStream = chatRepository.join(roomId),
+      messageGroupStream = chatRepository.join(roomId).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList(),
+      ),
     ),
   )
 
