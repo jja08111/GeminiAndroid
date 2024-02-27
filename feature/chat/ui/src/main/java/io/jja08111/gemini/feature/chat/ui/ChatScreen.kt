@@ -73,6 +73,7 @@ internal fun ChatScreen(
   }
   val generatingMessage = uiState.generatingMessage
 
+  // TODO: Fix here...
   LaunchedEffect(generatingMessage?.length) {
     if (previousCanScrollForward == true || generatingMessage == null) {
       return@LaunchedEffect
