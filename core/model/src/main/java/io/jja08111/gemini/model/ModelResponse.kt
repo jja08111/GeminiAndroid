@@ -10,7 +10,4 @@ data class ModelResponse(
   val selected: Boolean,
   val state: ModelResponseState = ModelResponseState.Generating,
   val createdAt: Date,
-) {
-  val isGenerating: Boolean
-    get() = state == ModelResponseState.Generating
-}
+)
