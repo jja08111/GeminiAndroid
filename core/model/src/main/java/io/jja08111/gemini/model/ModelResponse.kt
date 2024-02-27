@@ -13,7 +13,4 @@ data class ModelResponse(
 ) {
   val isGenerating: Boolean
     get() = state == ModelResponseState.Generating
-
-  val isError: Boolean
-    get() = state == ModelResponseState.Error
 }

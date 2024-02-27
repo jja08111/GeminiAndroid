@@ -29,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.jja08111.gemini.core.ui.R
 import io.jja08111.gemini.model.MessageGroup
+import io.jja08111.gemini.model.ModelResponseState
 
 @Composable
 internal fun MessageGroupItem(
@@ -37,6 +38,7 @@ internal fun MessageGroupItem(
   generatingMessage: String?,
 ) {
   val modelResponse = messageGroup.selectedResponse
+  val modelResponseState = modelResponse.state
 
   Column(
     modifier = modifier,
@@ -48,14 +50,10 @@ internal fun MessageGroupItem(
     )
     Spacer(modifier = Modifier.padding(4.dp))
     TextMessageItem(
-      text = if (modelResponse.isGenerating && generatingMessage != null) {
-        generatingMessage
-      } else {
-        modelResponse.text
-      },
+      text = generatingMessage ?: modelResponse.text,
       isMe = false,
-      isLoading = modelResponse.isGenerating,
-      isError = modelResponse.isError,
+      isLoading = modelResponseState == ModelResponseState.Generating,
+      isError = modelResponseState == ModelResponseState.Error,
     )
     Spacer(modifier = Modifier.padding(2.dp))
   }
