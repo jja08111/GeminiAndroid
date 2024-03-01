@@ -26,13 +26,12 @@ internal fun convertToMessageGroups(
 ): List<MessageGroup> {
   val result = mutableListOf<MessageGroup>()
   promptAndMessage.forEach { (prompt, responses) ->
+    val selectedResponse = responses.find { it.selected } ?: error("There is no selected response.")
     val lastResponse = result.lastOrNull()?.selectedResponse
     if (result.isEmpty() || prompt.parentModelResponseId == lastResponse?.id) {
       val messageGroup = MessageGroup(
         prompt = prompt.toDomain(),
-        selectedResponse = responses.find { it.selected }?.toDomain() ?: error(
-          "There is no selected response.",
-        ),
+        selectedResponse = selectedResponse.toDomain(),
         responseCount = responses.size,
       )
       result.add(messageGroup)
