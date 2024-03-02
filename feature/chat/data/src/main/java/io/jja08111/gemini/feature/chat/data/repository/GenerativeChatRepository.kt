@@ -93,7 +93,7 @@ class GenerativeChatRepository @Inject constructor(
       parentModelResponseId = parentModelResponseId,
     )
 
-    val history = messageGroups.flatMap { it.toContents() }
+    val history = messageGroups.flatMap(MessageGroup::toContents)
     chat.history.clear()
     chat.history.addAll(history)
 
