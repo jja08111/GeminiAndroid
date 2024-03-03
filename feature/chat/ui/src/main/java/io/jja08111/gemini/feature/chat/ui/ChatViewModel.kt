@@ -8,7 +8,7 @@ import com.google.ai.client.generativeai.type.ResponseStoppedException
 import com.google.ai.client.generativeai.type.ServerException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jja08111.core.navigation.mobile.ChatMobileDestinations
-import io.jja08111.gemini.core.ui.StringValue
+import io.jja08111.gemini.core.ui.Message
 import io.jja08111.gemini.feature.chat.data.repository.ChatRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
@@ -48,7 +48,7 @@ class ChatViewModel @Inject constructor(
     }
   }
 
-  fun sendTextMessage(message: String) {
+  fun sendTextMessage(message: String) =
     intent {
       reduce { state.copy(inputMessage = "") }
 
@@ -61,7 +61,6 @@ class ChatViewModel @Inject constructor(
         parentModelResponseId = parentModelResponseId,
       ).onFailure(::handleChatException)
     }
-  }
 
   private fun handleChatException(throwable: Throwable) {
     Log.e(TAG, "Error caused when generating response. $throwable")
@@ -70,7 +69,7 @@ class ChatViewModel @Inject constructor(
         is ResponseStoppedException -> postSideEffect(
           ChatSideEffect.UserMessage(
             // TODO: 에러 메시지 finishReason으로 디테일하게 바꾸기
-            message = StringValue.Resource(
+            message = Message.Resource(
               R.string.feature_chat_ui_response_stopped_message,
               throwable.response.candidates.first().finishReason?.name ?: "",
             ),
@@ -79,13 +78,13 @@ class ChatViewModel @Inject constructor(
 
         is ServerException -> postSideEffect(
           ChatSideEffect.UserMessage(
-            StringValue.Resource(R.string.feature_chat_ui_server_error_message),
+            Message.Resource(R.string.feature_chat_ui_server_error_message),
           ),
         )
 
         else -> postSideEffect(
           ChatSideEffect.UserMessage(
-            StringValue.Resource(R.string.feature_chat_ui_unknown_error_message),
+            Message.Resource(R.string.feature_chat_ui_unknown_error_message),
           ),
         )
       }

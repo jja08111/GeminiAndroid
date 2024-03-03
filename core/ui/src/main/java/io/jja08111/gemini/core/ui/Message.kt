@@ -3,20 +3,20 @@ package io.jja08111.gemini.core.ui
 import android.content.Context
 import androidx.annotation.StringRes
 
-sealed class StringValue {
-  data class Dynamic(val value: String) : StringValue()
+sealed class Message {
+  data class Primitive(val value: String) : Message()
 
-  data object Empty : StringValue()
+  data object Empty : Message()
 
   class Resource(
     @StringRes val resId: Int,
     vararg val args: Any,
-  ) : StringValue()
+  ) : Message()
 
   fun asString(context: Context): String {
     return when (this) {
       is Empty -> ""
-      is Dynamic -> value
+      is Primitive -> value
       is Resource -> context.getString(resId, *args)
     }
   }
