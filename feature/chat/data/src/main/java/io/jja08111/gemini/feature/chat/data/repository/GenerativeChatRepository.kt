@@ -3,6 +3,7 @@ package io.jja08111.gemini.feature.chat.data.repository
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
+import io.github.jja08111.core.common.di.IoDispatcher
 import io.jja08111.gemini.database.dao.MessageDao
 import io.jja08111.gemini.database.entity.ModelResponseEntity
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
@@ -15,8 +16,9 @@ import io.jja08111.gemini.feature.chat.data.model.CANDIDATE_COUNT
 import io.jja08111.gemini.feature.chat.data.model.ROLE_USER
 import io.jja08111.gemini.feature.chat.data.model.ResponseTextBuilder
 import io.jja08111.gemini.model.MessageGroup
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,10 +37,10 @@ import javax.inject.Inject
 import kotlin.coroutines.resume
 
 class GenerativeChatRepository @Inject constructor(
+  @IoDispatcher externalDispatcher: CoroutineDispatcher,
   private val messageDao: MessageDao,
 ) : ChatRepository {
-  // TODO: Inject from the hilt module
-  private val coroutineScope = CoroutineScope(Dispatchers.Default)
+  private val coroutineScope = CoroutineScope(SupervisorJob() + externalDispatcher)
   private val currentRoomId = MutableStateFlow<String?>(null)
   private val generativeModel = MutableStateFlow<GenerativeModel?>(null)
   private val generativeChat = generativeModel.mapLatest {
