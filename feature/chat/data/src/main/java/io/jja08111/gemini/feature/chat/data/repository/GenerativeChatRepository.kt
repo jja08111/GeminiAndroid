@@ -157,7 +157,7 @@ class GenerativeChatRepository @Inject constructor(
   }
 
   private fun throwJoinNotCalledError(): Nothing {
-    error("Call join before using sendTextMessage")
+    error("Must call join function before usage")
   }
 
   override fun exit() {
