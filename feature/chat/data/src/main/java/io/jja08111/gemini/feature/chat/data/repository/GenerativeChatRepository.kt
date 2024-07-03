@@ -41,7 +41,7 @@ class GenerativeChatRepository @Inject constructor(
   private val messageDao: MessageDao,
 ) : ChatRepository {
   private val coroutineScope = CoroutineScope(SupervisorJob() + externalDispatcher)
-  private val currentRoomId = MutableStateFlow<String?>(null)
+  private var currentRoomId: String? = null
   private val generativeModel = MutableStateFlow<GenerativeModel?>(null)
   private val generativeChat = generativeModel.mapLatest {
     it?.startChat()
@@ -62,7 +62,7 @@ class GenerativeChatRepository @Inject constructor(
   }
 
   override fun join(roomId: String): Flow<List<MessageGroup>> {
-    currentRoomId.update { roomId }
+    currentRoomId = roomId
     generativeModel.update {
       GenerativeModel(
         modelName = "gemini-pro",
@@ -131,7 +131,7 @@ class GenerativeChatRepository @Inject constructor(
     responseIds: List<String>,
     parentModelResponseId: String?,
   ) {
-    val roomId = currentRoomId.value ?: throwJoinNotCalledError()
+    val roomId = currentRoomId ?: throwJoinNotCalledError()
     val createdAt = Date().time
 
     messageDao.insert(
@@ -161,7 +161,7 @@ class GenerativeChatRepository @Inject constructor(
   }
 
   override fun exit() {
-    currentRoomId.update { null }
+    currentRoomId = null
     generativeModel.update { null }
   }
 }
