@@ -3,6 +3,7 @@ package io.github.jja08111.core.navigation.mobile
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 
+// TODO: Typesafe한 navigation으로 마이그레이션
 sealed class MobileDestinations(val route: String)
 
 data object RoomsMobileDestinations : MobileDestinations(route = "rooms")

@@ -6,9 +6,4 @@ import kotlinx.coroutines.flow.Flow
 
 interface RoomRepository {
   fun getRoomStream(): Flow<PagingData<Room>>
-
-  /**
-   * @return Created room ID
-   */
-  suspend fun createRoom(): Result<String>
 }

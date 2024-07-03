@@ -10,6 +10,7 @@ interface ChatRepository {
     message: String,
     messageGroups: List<MessageGroup>,
     parentModelResponseId: String?,
+    onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit>
 
   fun exit()

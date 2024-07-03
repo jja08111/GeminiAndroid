@@ -5,9 +5,11 @@ import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.github.jja08111.core.common.di.IoDispatcher
 import io.jja08111.gemini.database.dao.MessageDao
+import io.jja08111.gemini.database.dao.RoomDao
 import io.jja08111.gemini.database.entity.ModelResponseEntity
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.database.entity.PromptEntity
+import io.jja08111.gemini.database.entity.RoomEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
 import io.jja08111.gemini.feature.chat.data.extension.convertToMessageGroups
 import io.jja08111.gemini.feature.chat.data.extension.toContents
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
@@ -39,6 +42,7 @@ import kotlin.coroutines.resume
 class GenerativeChatRepository @Inject constructor(
   @IoDispatcher externalDispatcher: CoroutineDispatcher,
   private val messageDao: MessageDao,
+  private val roomDao: RoomDao,
 ) : ChatRepository {
   private val coroutineScope = CoroutineScope(SupervisorJob() + externalDispatcher)
   private var currentRoomId: String? = null
@@ -72,6 +76,14 @@ class GenerativeChatRepository @Inject constructor(
         },
       )
     }
+    return try {
+      getMessageGroupStream(roomId)
+    } catch (e: Exception) {
+      flowOf(emptyList())
+    }
+  }
+
+  private fun getMessageGroupStream(roomId: String): Flow<List<MessageGroup>> {
     return messageDao.getPromptAndResponses(roomId).mapLatest(::convertToMessageGroups)
   }
 
@@ -79,7 +91,15 @@ class GenerativeChatRepository @Inject constructor(
     message: String,
     messageGroups: List<MessageGroup>,
     parentModelResponseId: String?,
+    onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit> {
+    val isNewChat = messageGroups.isEmpty()
+    if (isNewChat) {
+      val roomId = currentRoomId ?: throwJoinNotCalledError()
+      roomDao.insert(RoomEntity(id = roomId, createdAt = Date().time, title = null))
+      val messageGroupStream = getMessageGroupStream(roomId)
+      onRoomCreated(messageGroupStream)
+    }
     val chat = generativeChat.value ?: throwJoinNotCalledError()
     val content = content {
       role = ROLE_USER

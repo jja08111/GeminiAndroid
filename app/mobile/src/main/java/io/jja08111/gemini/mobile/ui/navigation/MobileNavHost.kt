@@ -18,7 +18,10 @@ internal fun MobileNavHost(navController: NavHostController = rememberNavControl
     startDestination = RoomsMobileDestinations.route,
   ) {
     composable(RoomsMobileDestinations.route) {
-      RoomsRoute(navigateToChat = { roomId -> navController.navigateToChat(roomId) })
+      RoomsRoute(
+        navigateToChat = navController::navigateToChat,
+        navigateToNewChat = navController::navigateToChat,
+      )
     }
     composable(
       route = ChatMobileDestinations.routeWithArg,

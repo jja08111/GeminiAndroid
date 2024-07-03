@@ -59,6 +59,9 @@ class ChatViewModel @Inject constructor(
         message = message,
         messageGroups = messageGroups,
         parentModelResponseId = parentModelResponseId,
+        onRoomCreated = { stream ->
+          intent { reduce { state.copy(messageGroupStream = stream) } }
+        },
       ).onFailure(::handleChatException)
     }
 

@@ -10,7 +10,11 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 @Composable
-fun RoomsRoute(viewModel: RoomsViewModel = hiltViewModel(), navigateToChat: (String) -> Unit) {
+fun RoomsRoute(
+  viewModel: RoomsViewModel = hiltViewModel(),
+  navigateToChat: (String) -> Unit,
+  navigateToNewChat: () -> Unit,
+) {
   val uiState by viewModel.collectAsState()
   val snackbarHostState = remember { SnackbarHostState() }
   val context = LocalContext.current
@@ -26,6 +30,6 @@ fun RoomsRoute(viewModel: RoomsViewModel = hiltViewModel(), navigateToChat: (Str
     uiState = uiState,
     snackbarHostState = snackbarHostState,
     onRoomClick = navigateToChat,
-    onCreateClick = viewModel::createRoom,
+    onCreateClick = navigateToNewChat,
   )
 }
