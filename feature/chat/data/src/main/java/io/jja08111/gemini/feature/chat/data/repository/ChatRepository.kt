@@ -8,8 +8,6 @@ interface ChatRepository {
 
   suspend fun sendTextMessage(
     message: String,
-    messageGroups: List<MessageGroup>,
-    parentModelResponseId: String?,
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit>
 

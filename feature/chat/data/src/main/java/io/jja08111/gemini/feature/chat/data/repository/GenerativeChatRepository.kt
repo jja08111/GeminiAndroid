@@ -1,6 +1,9 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
+import com.google.ai.client.generativeai.Chat
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.Content
+import com.google.ai.client.generativeai.type.GenerateContentResponse
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.github.jja08111.core.common.di.IoDispatcher
@@ -23,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onCompletion
@@ -76,24 +80,21 @@ class GenerativeChatRepository @Inject constructor(
 
   override suspend fun sendTextMessage(
     message: String,
-    messageGroups: List<MessageGroup>,
-    parentModelResponseId: String?,
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit> {
-    val isNewChat = messageGroups.isEmpty()
     val roomId = currentRoomId ?: throwNotJoinedError()
+    val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
+    val messageGroups = messageGroupStream.first()
+    val isNewChat = messageGroups.isEmpty()
+
     if (isNewChat) {
       chatLocalDataSource.insertRoom(roomId = roomId, title = message)
-      val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
       onRoomCreated(messageGroupStream)
     }
-    val chat = generativeChat.value ?: throwNotJoinedError()
-    val content = content {
-      role = ROLE_USER
-      text(message)
-    }
+
     val promptId = createId()
     val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
+    val parentModelResponseId = messageGroups.lastOrNull()?.selectedResponse?.id
 
     chatLocalDataSource.insertInitialMessageGroup(
       prompt = message,
@@ -103,13 +104,16 @@ class GenerativeChatRepository @Inject constructor(
       parentModelResponseId = parentModelResponseId,
     )
 
-    val history = messageGroups.flatMap(MessageGroup::toContents)
-    chat.history.clear()
-    chat.history.addAll(history)
-
     return suspendCancellableCoroutine { continuation ->
       coroutineScope.launch {
-        chat.sendMessageStream(content)
+        val chat = generativeChat.value ?: throwNotJoinedError()
+        val history = messageGroups.flatMap(MessageGroup::toContents)
+        val prompt = content {
+          role = ROLE_USER
+          text(message)
+        }
+
+        chat.sendMessageStreamWithNewHistory(prompt, history)
           .onEach { response ->
             val candidates = response.candidates
             val contentPartials = candidates.toResponseContentPartials(responseTextBuilders)
@@ -130,6 +134,15 @@ class GenerativeChatRepository @Inject constructor(
           .collect()
       }
     }
+  }
+
+  private fun Chat.sendMessageStreamWithNewHistory(
+    prompt: Content,
+    history: List<Content>,
+  ): Flow<GenerateContentResponse> {
+    this.history.clear()
+    this.history.addAll(history)
+    return sendMessageStream(prompt)
   }
 
   private fun throwNotJoinedError(): Nothing {
