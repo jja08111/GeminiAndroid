@@ -96,7 +96,7 @@ class GenerativeChatRepository @Inject constructor(
     val isNewChat = messageGroups.isEmpty()
     if (isNewChat) {
       val roomId = currentRoomId ?: throwJoinNotCalledError()
-      roomDao.insert(RoomEntity(id = roomId, createdAt = Date().time, title = null))
+      roomDao.insert(RoomEntity(id = roomId, createdAt = Date().time, title = message))
       val messageGroupStream = getMessageGroupStream(roomId)
       onRoomCreated(messageGroupStream)
     }
