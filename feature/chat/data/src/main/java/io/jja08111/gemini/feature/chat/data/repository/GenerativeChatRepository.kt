@@ -124,7 +124,6 @@ class GenerativeChatRepository @Inject constructor(
       coroutineScope.launch {
         chat.sendMessageStream(content)
           .onEach { response ->
-            // TODO: 생성되고 있는 응답은 UI에서 컨트롤 하기. DB에 값을 갱신하는 것은 부하가 크고 UI 모델을 다시 생성하게 함
             val candidates = response.candidates
             val contentPartials = candidates.toResponseContentPartials(responseTextBuilders)
             messageDao.updateAll(contentPartials)
