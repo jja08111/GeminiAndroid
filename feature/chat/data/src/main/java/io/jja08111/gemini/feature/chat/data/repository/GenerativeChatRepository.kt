@@ -1,9 +1,6 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
-import com.google.ai.client.generativeai.Chat
 import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.Content
-import com.google.ai.client.generativeai.type.GenerateContentResponse
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.github.jja08111.core.common.di.IoDispatcher
@@ -22,17 +19,12 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
@@ -44,14 +36,7 @@ class GenerativeChatRepository @Inject constructor(
 ) : ChatRepository {
   private val coroutineScope = CoroutineScope(SupervisorJob() + externalDispatcher)
   private var currentRoomId: String? = null
-  private val generativeModel = MutableStateFlow<GenerativeModel?>(null)
-  private val generativeChat = generativeModel.mapLatest {
-    it?.startChat()
-  }.stateIn(
-    scope = coroutineScope,
-    started = SharingStarted.Eagerly,
-    initialValue = null,
-  )
+  private var generativeModel: GenerativeModel? = null
 
   init {
     coroutineScope.launch {
@@ -62,15 +47,13 @@ class GenerativeChatRepository @Inject constructor(
 
   override fun join(roomId: String): Flow<List<MessageGroup>> {
     currentRoomId = roomId
-    generativeModel.update {
-      GenerativeModel(
-        modelName = MODEL_NAME,
-        apiKey = BuildConfig.GEMINI_API_KEY,
-        generationConfig = generationConfig {
-          candidateCount = CANDIDATE_COUNT
-        },
-      )
-    }
+    generativeModel = GenerativeModel(
+      modelName = MODEL_NAME,
+      apiKey = BuildConfig.GEMINI_API_KEY,
+      generationConfig = generationConfig {
+        candidateCount = CANDIDATE_COUNT
+      },
+    )
     return try {
       chatLocalDataSource.getMessageGroupStream(roomId)
     } catch (e: Exception) {
@@ -83,6 +66,7 @@ class GenerativeChatRepository @Inject constructor(
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit> {
     val roomId = currentRoomId ?: throwNotJoinedError()
+    val model = generativeModel ?: throwNotJoinedError()
     val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
     val messageGroups = messageGroupStream.first()
     val isNewChat = messageGroups.isEmpty()
@@ -106,14 +90,13 @@ class GenerativeChatRepository @Inject constructor(
 
     return suspendCancellableCoroutine { continuation ->
       coroutineScope.launch {
-        val chat = generativeChat.value ?: throwNotJoinedError()
         val history = messageGroups.flatMap(MessageGroup::toContents)
         val prompt = content {
           role = ROLE_USER
           text(message)
         }
 
-        chat.sendMessageStreamWithNewHistory(prompt, history)
+        model.generateContentStream(*history.toTypedArray(), prompt)
           .onEach { response ->
             val candidates = response.candidates
             val contentPartials = candidates.toResponseContentPartials(responseTextBuilders)
@@ -136,21 +119,12 @@ class GenerativeChatRepository @Inject constructor(
     }
   }
 
-  private fun Chat.sendMessageStreamWithNewHistory(
-    prompt: Content,
-    history: List<Content>,
-  ): Flow<GenerateContentResponse> {
-    this.history.clear()
-    this.history.addAll(history)
-    return sendMessageStream(prompt)
-  }
-
   private fun throwNotJoinedError(): Nothing {
     error("Must call join function before usage")
   }
 
   override fun exit() {
     currentRoomId = null
-    generativeModel.update { null }
+    generativeModel = null
   }
 }
