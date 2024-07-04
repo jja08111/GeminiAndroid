@@ -15,6 +15,7 @@ import io.jja08111.gemini.feature.chat.data.extension.convertToMessageGroups
 import io.jja08111.gemini.feature.chat.data.extension.toContents
 import io.jja08111.gemini.feature.chat.data.extension.toResponseContentPartials
 import io.jja08111.gemini.feature.chat.data.model.CANDIDATE_COUNT
+import io.jja08111.gemini.feature.chat.data.model.MODEL_NAME
 import io.jja08111.gemini.feature.chat.data.model.ROLE_USER
 import io.jja08111.gemini.feature.chat.data.model.ResponseTextBuilder
 import io.jja08111.gemini.model.MessageGroup
@@ -69,7 +70,7 @@ class GenerativeChatRepository @Inject constructor(
     currentRoomId = roomId
     generativeModel.update {
       GenerativeModel(
-        modelName = "gemini-pro",
+        modelName = MODEL_NAME,
         apiKey = BuildConfig.GEMINI_API_KEY,
         generationConfig = generationConfig {
           candidateCount = CANDIDATE_COUNT
