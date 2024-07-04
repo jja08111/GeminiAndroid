@@ -4,20 +4,15 @@ import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.github.jja08111.core.common.di.IoDispatcher
-import io.jja08111.gemini.database.dao.MessageDao
-import io.jja08111.gemini.database.dao.RoomDao
-import io.jja08111.gemini.database.entity.ModelResponseEntity
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
-import io.jja08111.gemini.database.entity.PromptEntity
-import io.jja08111.gemini.database.entity.RoomEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
-import io.jja08111.gemini.feature.chat.data.extension.convertToMessageGroups
 import io.jja08111.gemini.feature.chat.data.extension.toContents
 import io.jja08111.gemini.feature.chat.data.extension.toResponseContentPartials
 import io.jja08111.gemini.feature.chat.data.model.CANDIDATE_COUNT
 import io.jja08111.gemini.feature.chat.data.model.MODEL_NAME
 import io.jja08111.gemini.feature.chat.data.model.ROLE_USER
 import io.jja08111.gemini.feature.chat.data.model.ResponseTextBuilder
+import io.jja08111.gemini.feature.chat.data.source.ChatLocalDataSource
 import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.createId
 import kotlinx.coroutines.CoroutineDispatcher
@@ -36,14 +31,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.util.Date
 import javax.inject.Inject
 import kotlin.coroutines.resume
 
 class GenerativeChatRepository @Inject constructor(
   @IoDispatcher externalDispatcher: CoroutineDispatcher,
-  private val messageDao: MessageDao,
-  private val roomDao: RoomDao,
+  private val chatLocalDataSource: ChatLocalDataSource,
 ) : ChatRepository {
   private val coroutineScope = CoroutineScope(SupervisorJob() + externalDispatcher)
   private var currentRoomId: String? = null
@@ -59,10 +52,7 @@ class GenerativeChatRepository @Inject constructor(
   init {
     coroutineScope.launch {
       // Update state of all messages because the Generating state is still remain when app is killed.
-      messageDao.updateAllModelResponseState(
-        oldState = ModelResponseStateEntity.Generating,
-        newState = ModelResponseStateEntity.Generated,
-      )
+      chatLocalDataSource.completePendingMessagesState()
     }
   }
 
@@ -78,14 +68,10 @@ class GenerativeChatRepository @Inject constructor(
       )
     }
     return try {
-      getMessageGroupStream(roomId)
+      chatLocalDataSource.getMessageGroupStream(roomId)
     } catch (e: Exception) {
       flowOf(emptyList())
     }
-  }
-
-  private fun getMessageGroupStream(roomId: String): Flow<List<MessageGroup>> {
-    return messageDao.getPromptAndResponses(roomId).mapLatest(::convertToMessageGroups)
   }
 
   override suspend fun sendTextMessage(
@@ -95,10 +81,10 @@ class GenerativeChatRepository @Inject constructor(
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit> {
     val isNewChat = messageGroups.isEmpty()
+    val roomId = currentRoomId ?: throwNotJoinedError()
     if (isNewChat) {
-      val roomId = currentRoomId ?: throwNotJoinedError()
-      roomDao.insert(RoomEntity(id = roomId, createdAt = Date().time, title = message))
-      val messageGroupStream = getMessageGroupStream(roomId)
+      chatLocalDataSource.insertRoom(roomId = roomId, title = message)
+      val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
       onRoomCreated(messageGroupStream)
     }
     val chat = generativeChat.value ?: throwNotJoinedError()
@@ -109,8 +95,9 @@ class GenerativeChatRepository @Inject constructor(
     val promptId = createId()
     val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
 
-    insertInitialMessageGroup(
+    chatLocalDataSource.insertInitialMessageGroup(
       prompt = message,
+      roomId = roomId,
       promptId = promptId,
       responseIds = responseTextBuilders.map { it.id },
       parentModelResponseId = parentModelResponseId,
@@ -126,7 +113,7 @@ class GenerativeChatRepository @Inject constructor(
           .onEach { response ->
             val candidates = response.candidates
             val contentPartials = candidates.toResponseContentPartials(responseTextBuilders)
-            messageDao.updateAll(contentPartials)
+            chatLocalDataSource.updateResponseContentPartials(contentPartials)
           }
           .onCompletion { throwable ->
             val isError = throwable != null
@@ -135,7 +122,7 @@ class GenerativeChatRepository @Inject constructor(
             } else {
               ModelResponseStateEntity.Generated
             }
-            messageDao.updateResponseStatesBy(promptId = promptId, state = state)
+            chatLocalDataSource.updateResponseStatesBy(promptId = promptId, state = state)
             val result = if (throwable != null) Result.failure(throwable) else Result.success(Unit)
             continuation.resume(result)
           }
@@ -143,37 +130,6 @@ class GenerativeChatRepository @Inject constructor(
           .collect()
       }
     }
-  }
-
-  private suspend fun insertInitialMessageGroup(
-    prompt: String,
-    promptId: String,
-    responseIds: List<String>,
-    parentModelResponseId: String?,
-  ) {
-    val roomId = currentRoomId ?: throwNotJoinedError()
-    val createdAt = Date().time
-
-    messageDao.insert(
-      PromptEntity(
-        id = promptId,
-        roomId = roomId,
-        parentModelResponseId = parentModelResponseId,
-        text = prompt,
-        createdAt = createdAt,
-      ),
-      responseIds.mapIndexed { index, id ->
-        ModelResponseEntity(
-          id = id,
-          roomId = roomId,
-          parentPromptId = promptId,
-          text = "",
-          createdAt = createdAt,
-          state = ModelResponseStateEntity.Generating,
-          selected = index == 0,
-        )
-      },
-    )
   }
 
   private fun throwNotJoinedError(): Nothing {
