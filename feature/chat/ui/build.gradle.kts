@@ -25,6 +25,8 @@ dependencies {
   implementation(libs.androidx.hilt.navigation.compose)
   implementation(libs.androidx.lifecycle.compose)
 
+  implementation(libs.compose.markdown)
+
   implementation(libs.androidx.room.paging)
   implementation(libs.androidx.paging.compose)
 

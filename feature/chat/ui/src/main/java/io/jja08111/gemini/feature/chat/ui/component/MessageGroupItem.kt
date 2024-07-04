@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import io.jja08111.gemini.core.ui.R
 import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.ModelResponseState
@@ -103,9 +104,9 @@ private fun ColumnScope.TextMessageItem(
         isError -> ErrorMessageItem(textColor = textColor.copy(alpha = 0.4f))
         isLoading && text.isEmpty() -> Shimmer()
         else -> {
-          Text(
+          MarkdownText(
             modifier = Modifier.align(Alignment.CenterVertically),
-            text = text,
+            markdown = text,
             style = MaterialTheme.typography.bodyLarge.copy(
               color = textColor,
             ),
