@@ -47,7 +47,7 @@ class ChatViewModel @Inject constructor(
     }
   }
 
-  fun sendTextMessage(message: String) =
+  fun sendTextMessage(message: String) {
     intent {
       reduce { state.copy(inputMessage = "") }
 
@@ -58,6 +58,7 @@ class ChatViewModel @Inject constructor(
         },
       ).onFailure(::handleChatException)
     }
+  }
 
   private fun handleChatException(throwable: Throwable) {
     Log.e(TAG, "Error caused when generating response. $throwable")
