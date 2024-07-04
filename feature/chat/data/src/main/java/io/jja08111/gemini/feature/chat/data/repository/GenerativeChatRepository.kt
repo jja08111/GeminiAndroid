@@ -35,7 +35,7 @@ class GenerativeChatRepository @Inject constructor(
   private val chatLocalDataSource: ChatLocalDataSource,
 ) : ChatRepository {
   private val coroutineScope = CoroutineScope(SupervisorJob() + externalDispatcher)
-  private var currentRoomId: String? = null
+  private var joinedRoomId: String? = null
   private var generativeModel: GenerativeModel? = null
 
   init {
@@ -46,7 +46,7 @@ class GenerativeChatRepository @Inject constructor(
   }
 
   override fun join(roomId: String): Flow<List<MessageGroup>> {
-    currentRoomId = roomId
+    joinedRoomId = roomId
     generativeModel = GenerativeModel(
       modelName = MODEL_NAME,
       apiKey = BuildConfig.GEMINI_API_KEY,
@@ -65,7 +65,7 @@ class GenerativeChatRepository @Inject constructor(
     message: String,
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit> {
-    val roomId = currentRoomId ?: throwNotJoinedError()
+    val roomId = joinedRoomId ?: throwNotJoinedError()
     val model = generativeModel ?: throwNotJoinedError()
     val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
     val messageGroups = messageGroupStream.first()
@@ -124,7 +124,7 @@ class GenerativeChatRepository @Inject constructor(
   }
 
   override fun exit() {
-    currentRoomId = null
+    joinedRoomId = null
     generativeModel = null
   }
 }
