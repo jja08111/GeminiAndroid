@@ -96,12 +96,12 @@ class GenerativeChatRepository @Inject constructor(
   ): Result<Unit> {
     val isNewChat = messageGroups.isEmpty()
     if (isNewChat) {
-      val roomId = currentRoomId ?: throwJoinNotCalledError()
+      val roomId = currentRoomId ?: throwNotJoinedError()
       roomDao.insert(RoomEntity(id = roomId, createdAt = Date().time, title = message))
       val messageGroupStream = getMessageGroupStream(roomId)
       onRoomCreated(messageGroupStream)
     }
-    val chat = generativeChat.value ?: throwJoinNotCalledError()
+    val chat = generativeChat.value ?: throwNotJoinedError()
     val content = content {
       role = ROLE_USER
       text(message)
@@ -151,7 +151,7 @@ class GenerativeChatRepository @Inject constructor(
     responseIds: List<String>,
     parentModelResponseId: String?,
   ) {
-    val roomId = currentRoomId ?: throwJoinNotCalledError()
+    val roomId = currentRoomId ?: throwNotJoinedError()
     val createdAt = Date().time
 
     messageDao.insert(
@@ -176,7 +176,7 @@ class GenerativeChatRepository @Inject constructor(
     )
   }
 
-  private fun throwJoinNotCalledError(): Nothing {
+  private fun throwNotJoinedError(): Nothing {
     error("Must call join function before usage")
   }
 
