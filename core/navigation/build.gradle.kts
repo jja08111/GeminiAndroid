@@ -8,6 +8,7 @@ android {
 }
 
 dependencies {
+  implementation(project(":core:model"))
 
   implementation(libs.androidx.hilt.navigation.compose)
 }

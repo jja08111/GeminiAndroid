@@ -19,6 +19,7 @@ import io.jja08111.gemini.feature.chat.data.model.MODEL_NAME
 import io.jja08111.gemini.feature.chat.data.model.ROLE_USER
 import io.jja08111.gemini.feature.chat.data.model.ResponseTextBuilder
 import io.jja08111.gemini.model.MessageGroup
+import io.jja08111.gemini.model.createId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -36,7 +37,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.resume
 
@@ -106,7 +106,7 @@ class GenerativeChatRepository @Inject constructor(
       role = ROLE_USER
       text(message)
     }
-    val promptId = UUID.randomUUID().toString()
+    val promptId = createId()
     val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
 
     insertInitialMessageGroup(

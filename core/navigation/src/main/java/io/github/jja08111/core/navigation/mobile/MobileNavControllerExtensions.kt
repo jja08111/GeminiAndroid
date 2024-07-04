@@ -1,8 +1,8 @@
 package io.github.jja08111.core.navigation.mobile
 
 import androidx.navigation.NavHostController
-import java.util.UUID
+import io.jja08111.gemini.model.createId
 
-fun NavHostController.navigateToChat(roomId: String = UUID.randomUUID().toString()) {
+fun NavHostController.navigateToChat(roomId: String = createId()) {
   navigate(ChatMobileDestinations.createRoute(roomId))
 }

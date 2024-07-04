@@ -1,10 +1,9 @@
 package io.jja08111.gemini.model
 
 import java.util.Date
-import java.util.UUID
 
 data class ModelResponse(
-  val id: String = UUID.randomUUID().toString(),
+  val id: String = createId(),
   val text: String,
   val roomId: String,
   val selected: Boolean,
