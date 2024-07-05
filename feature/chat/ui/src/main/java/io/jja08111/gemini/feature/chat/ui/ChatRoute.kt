@@ -30,5 +30,6 @@ fun ChatRoute(viewModel: ChatViewModel = hiltViewModel(), onBackClick: () -> Uni
     onBackClick = onBackClick,
     onInputUpdate = viewModel::updateInputMessage,
     onSendClick = viewModel::sendTextMessage,
+    onRegenerateOnErrorClick = viewModel::regenerateOnError,
   )
 }

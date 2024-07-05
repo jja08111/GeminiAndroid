@@ -72,4 +72,24 @@ class ChatLocalDataSource @Inject constructor(
   suspend fun insertRoom(roomId: String, title: String) {
     roomDao.insert(RoomEntity(id = roomId, createdAt = Date().time, title = title))
   }
+
+  suspend fun insertResponsesAndRemoveError(
+    newResponseIds: List<String>,
+    errorResponseId: String,
+    roomId: String,
+    promptId: String,
+  ) {
+    val responses = newResponseIds.mapIndexed { index, id ->
+      ModelResponseEntity(
+        id = id,
+        roomId = roomId,
+        parentPromptId = promptId,
+        text = "",
+        createdAt = Date().time,
+        state = ModelResponseStateEntity.Generating,
+        selected = index == 0,
+      )
+    }
+    messageDao.insertAndRemove(modelResponses = responses, responseIdToRemove = errorResponseId)
+  }
 }

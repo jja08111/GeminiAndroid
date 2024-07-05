@@ -12,7 +12,7 @@ import io.jja08111.gemini.database.entity.partial.ModelResponseContentPartial
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface MessageDao {
+abstract class MessageDao {
   @Query(
     """
       SELECT * 
@@ -20,13 +20,27 @@ interface MessageDao {
       WHERE prompt.room_id = :roomId ORDER BY prompt.created_at ASC
     """,
   )
-  fun getPromptAndResponses(roomId: String): Flow<Map<PromptEntity, List<ModelResponseEntity>>>
+  abstract fun getPromptAndResponses(
+    roomId: String,
+  ): Flow<Map<PromptEntity, List<ModelResponseEntity>>>
 
   @Insert
-  suspend fun insert(prompt: PromptEntity, modelResponse: List<ModelResponseEntity>)
+  abstract suspend fun insert(prompt: PromptEntity, modelResponse: List<ModelResponseEntity>)
+
+  @Insert
+  abstract suspend fun insert(modelResponses: List<ModelResponseEntity>)
+
+  @Transaction
+  open suspend fun insertAndRemove(
+    modelResponses: List<ModelResponseEntity>,
+    responseIdToRemove: String,
+  ) {
+    insert(modelResponses)
+    deleteResponseById(responseIdToRemove)
+  }
 
   @Update(entity = ModelResponseEntity::class)
-  suspend fun updateAll(message: List<ModelResponseContentPartial>)
+  abstract suspend fun updateAll(message: List<ModelResponseContentPartial>)
 
   @Transaction
   @Query(
@@ -36,11 +50,14 @@ interface MessageDao {
       WHERE parent_prompt_id = :promptId
     """,
   )
-  suspend fun updateResponseStatesBy(promptId: String, state: ModelResponseStateEntity)
+  abstract suspend fun updateResponseStatesBy(promptId: String, state: ModelResponseStateEntity)
 
   @Query("UPDATE model_response SET state = :newState WHERE state = :oldState")
-  fun updateAllModelResponseState(
+  abstract fun updateAllModelResponseState(
     oldState: ModelResponseStateEntity,
     newState: ModelResponseStateEntity,
   )
+
+  @Query("DELETE FROM model_response WHERE id = :id")
+  abstract suspend fun deleteResponseById(id: String)
 }

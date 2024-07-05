@@ -7,17 +7,22 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -60,6 +65,7 @@ internal fun ChatScreen(
   onBackClick: () -> Unit,
   onInputUpdate: (String) -> Unit,
   onSendClick: (String) -> Unit,
+  onRegenerateOnErrorClick: () -> Unit,
 ) {
   val messageGroups by uiState.messageGroupStream.collectAsStateWithLifecycle(emptyList())
   val isGenerating by uiState.isGenerating.collectAsStateWithLifecycle(false)
@@ -97,51 +103,64 @@ internal fun ChatScreen(
     }
   }
 
-  Scaffold(
-    snackbarHost = { SnackbarHost(snackbarHostState) },
-    topBar = {
-      TopAppBar(
-        title = {},
-        navigationIcon = {
-          IconButton(onClick = onBackClick) {
-            Icon(
-              imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-              contentDescription = "Back button",
+  Column(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+      modifier = Modifier.weight(1f),
+      snackbarHost = { SnackbarHost(snackbarHostState) },
+      topBar = {
+        TopAppBar(
+          title = {},
+          navigationIcon = {
+            IconButton(onClick = onBackClick) {
+              Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back button",
+              )
+            }
+          },
+        )
+      },
+    ) { innerPadding ->
+      Column(modifier = Modifier.padding(innerPadding)) {
+        BoxWithConstraints(
+          modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f),
+        ) {
+          if (messageGroups.isEmpty()) {
+            EmptyContent()
+          } else {
+            MessageGroupList(
+              modifier = Modifier.fillMaxSize(),
+              listState = listState,
+              messageGroups = messageGroups,
             )
+            if (showGotoBottomButton) {
+              GotoBottomButton(
+                modifier = Modifier
+                  .align(Alignment.BottomEnd)
+                  .padding(16.dp),
+                onClick = {
+                  coroutineScope.launch {
+                    listState.scrollToLastMessageGroup(animated = true)
+                  }
+                },
+              )
+            }
           }
-        },
-      )
-    },
-  ) { innerPadding ->
-    Column(modifier = Modifier.padding(innerPadding)) {
-      BoxWithConstraints(
-        modifier = Modifier
-          .fillMaxWidth()
-          .weight(1f),
-      ) {
-        if (messageGroups.isEmpty()) {
-          EmptyContent()
-        } else {
-          MessageGroupList(
-            modifier = Modifier.fillMaxSize(),
-            listState = listState,
-            messageGroups = messageGroups,
-          )
-          if (showGotoBottomButton) {
-            GotoBottomButton(
-              modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-              onClick = {
-                coroutineScope.launch {
-                  listState.scrollToLastMessageGroup(animated = true)
-                }
-              },
-            )
-          }
+          VerticalGradient()
         }
-        VerticalGradient()
       }
+    }
+
+    if (hasLastResponseError) {
+      RegenerateButton(
+        modifier = Modifier
+          .align(Alignment.CenterHorizontally)
+          .padding(vertical = 8.dp),
+        onClick = onRegenerateOnErrorClick,
+      )
+    } else {
       ActionBar(
         inputMessage = uiState.inputMessage,
         trailingButtonType = if (isGenerating) {
@@ -215,6 +234,22 @@ private fun BoxScope.VerticalGradient() {
         ),
       ),
   )
+}
+
+@Composable
+private fun RegenerateButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
+  val contentColor = MaterialTheme.colorScheme.onPrimary
+
+  Button(modifier = modifier, onClick = onClick) {
+    Icon(
+      modifier = Modifier.size(20.dp),
+      imageVector = Icons.Default.Refresh,
+      tint = contentColor,
+      contentDescription = "Regenerate button",
+    )
+    Spacer(modifier = Modifier.width(8.dp))
+    Text(text = "Regenerate", style = MaterialTheme.typography.titleSmall, color = contentColor)
+  }
 }
 
 private suspend fun LazyListState.scrollToLastMessageGroup(animated: Boolean = false) {

@@ -1,6 +1,7 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.github.jja08111.core.common.di.IoDispatcher
@@ -88,15 +89,56 @@ class GenerativeChatRepository @Inject constructor(
       parentModelResponseId = parentModelResponseId,
     )
 
+    return model.generateTextMessageStream(
+      message = message,
+      history = messageGroups.flatMap(MessageGroup::toContents),
+      promptId = promptId,
+      responseTextBuilders = responseTextBuilders,
+    )
+  }
+
+  override suspend fun regenerateOnError(): Result<Unit> {
+    val model = generativeModel ?: throwNotJoinedError()
+    val roomId = joinedRoomId ?: throwNotJoinedError()
+    val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
+    val messageGroups = messageGroupStream.first()
+    val lastMessageGroup =
+      messageGroups.lastOrNull() ?: error("Message group list is empty when regenerating response")
+    val lastPrompt = lastMessageGroup.prompt
+    val lastPromptId = lastPrompt.id
+    val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
+
+    chatLocalDataSource.insertResponsesAndRemoveError(
+      newResponseIds = responseTextBuilders.map { it.id },
+      errorResponseId = lastMessageGroup.selectedResponse.id,
+      roomId = roomId,
+      promptId = lastPromptId,
+    )
+
+    return model.generateTextMessageStream(
+      message = lastPrompt.text,
+      history = messageGroups
+        .dropLast(1)
+        .flatMap(MessageGroup::toContents),
+      promptId = lastPromptId,
+      responseTextBuilders = responseTextBuilders,
+    )
+  }
+
+  private suspend fun GenerativeModel.generateTextMessageStream(
+    message: String,
+    history: List<Content>,
+    promptId: String,
+    responseTextBuilders: List<ResponseTextBuilder>,
+  ): Result<Unit> {
     return suspendCancellableCoroutine { continuation ->
       coroutineScope.launch {
-        val history = messageGroups.flatMap(MessageGroup::toContents)
         val prompt = content {
           role = ROLE_USER
           text(message)
         }
 
-        model.generateContentStream(*history.toTypedArray(), prompt)
+        generateContentStream(*history.toTypedArray(), prompt)
           .onEach { response ->
             val candidates = response.candidates
             val contentPartials = candidates.toResponseContentPartials(responseTextBuilders)

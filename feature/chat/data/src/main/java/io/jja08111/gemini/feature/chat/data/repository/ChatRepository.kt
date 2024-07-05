@@ -11,5 +11,7 @@ interface ChatRepository {
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit>
 
+  suspend fun regenerateOnError(): Result<Unit>
+
   fun exit()
 }
