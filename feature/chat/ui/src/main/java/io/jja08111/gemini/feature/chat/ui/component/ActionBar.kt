@@ -16,15 +16,21 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.jja08111.gemini.feature.chat.ui.R
 
+internal enum class ActionBarTrailingButtonType {
+  Empty,
+  Send,
+  Stop,
+}
+
 @Composable
 internal fun ActionBar(
   inputMessage: String,
-  canSend: Boolean,
-  showLoading: Boolean,
+  trailingButtonType: ActionBarTrailingButtonType,
   onInputMessageChange: (String) -> Unit,
   onSendClick: (String) -> Unit,
 ) {
@@ -47,21 +53,46 @@ internal fun ActionBar(
     },
     trailingIcon = {
       Row {
-        if (showLoading) {
-          CircularProgressIndicator()
-        }
-        if (canSend) {
-          IconButton(
-            onClick = { onSendClick(inputMessage) },
-          ) {
-            Icon(
-              modifier = Modifier.padding(8.dp),
-              imageVector = Icons.AutoMirrored.Filled.Send,
-              contentDescription = "Send message",
-            )
+        when (trailingButtonType) {
+          ActionBarTrailingButtonType.Empty -> {
+            // No content
+          }
+
+          ActionBarTrailingButtonType.Send -> SendButton(onClick = { onSendClick(inputMessage) })
+
+          ActionBarTrailingButtonType.Stop -> {
+            // TODO: 정지 버튼으로 바꾸기
+            CircularProgressIndicator()
           }
         }
       }
     },
   )
+}
+
+@Composable
+private fun SendButton(onClick: () -> Unit) {
+  TrailingButton(
+    imageVector = Icons.AutoMirrored.Filled.Send,
+    contentDescription = "Send button",
+    onClick = onClick,
+  )
+}
+
+@Composable
+private fun TrailingButton(
+  imageVector: ImageVector,
+  contentDescription: String,
+  onClick: () -> Unit,
+) {
+  IconButton(
+    onClick = onClick,
+  ) {
+    Icon(
+      modifier = Modifier.padding(8.dp),
+      tint = MaterialTheme.colorScheme.onPrimaryContainer,
+      imageVector = imageVector,
+      contentDescription = contentDescription,
+    )
+  }
 }

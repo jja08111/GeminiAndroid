@@ -33,7 +33,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,9 +44,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.jja08111.gemini.core.ui.rememberPrevious
 import io.jja08111.gemini.feature.chat.ui.component.ActionBar
+import io.jja08111.gemini.feature.chat.ui.component.ActionBarTrailingButtonType
 import io.jja08111.gemini.feature.chat.ui.component.GotoBottomButton
 import io.jja08111.gemini.feature.chat.ui.component.MessageGroupItem
 import io.jja08111.gemini.model.MessageGroup
+import io.jja08111.gemini.model.ModelResponseState
 import kotlinx.coroutines.launch
 
 // TODO: Show keyboard when enter this screen
@@ -62,7 +63,9 @@ internal fun ChatScreen(
 ) {
   val messageGroups by uiState.messageGroupStream.collectAsStateWithLifecycle(emptyList())
   val isGenerating by uiState.isGenerating.collectAsStateWithLifecycle(false)
-  val canSendMessage by rememberUpdatedState(!isGenerating && uiState.inputMessage.isNotEmpty())
+  val lastMessageGroup = messageGroups.lastOrNull()
+  val hasLastResponseError = lastMessageGroup?.selectedResponse?.state == ModelResponseState.Error
+  val canSendMessage = !isGenerating && uiState.inputMessage.isNotEmpty() && !hasLastResponseError
   val previousCanScrollForward = rememberPrevious(listState.canScrollForward)
   val coroutineScope = rememberCoroutineScope()
   val keyboardController = LocalSoftwareKeyboardController.current
@@ -141,8 +144,13 @@ internal fun ChatScreen(
       }
       ActionBar(
         inputMessage = uiState.inputMessage,
-        canSend = canSendMessage,
-        showLoading = isGenerating,
+        trailingButtonType = if (isGenerating) {
+          ActionBarTrailingButtonType.Stop
+        } else if (canSendMessage) {
+          ActionBarTrailingButtonType.Send
+        } else {
+          ActionBarTrailingButtonType.Empty
+        },
         onSendClick = {
           onSendClick(it)
           keyboardController?.hide()
