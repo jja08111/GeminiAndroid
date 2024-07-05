@@ -183,7 +183,8 @@ private fun BoxWithConstraintsScope.MessageGroupList(
       MessageGroupItem(
         modifier = Modifier
           .fillMaxWidth()
-          .heightIn(min = if (isLast) maxHeight else 0.dp),
+          .heightIn(min = if (isLast) maxHeight else 0.dp)
+          .padding(bottom = if (isLast) 16.dp else 0.dp),
         messageGroup = messageGroup,
       )
     }
