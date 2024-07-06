@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import java.time.LocalDateTime
 
 @Entity(
   tableName = "prompt",
@@ -27,5 +28,5 @@ data class PromptEntity(
   @ColumnInfo("room_id") val roomId: String,
   @ColumnInfo("parent_model_response_id") val parentModelResponseId: String?,
   @ColumnInfo("text") val text: String,
-  @ColumnInfo("created_at") val createdAt: Long,
+  @ColumnInfo("created_at") val createdAt: LocalDateTime,
 )

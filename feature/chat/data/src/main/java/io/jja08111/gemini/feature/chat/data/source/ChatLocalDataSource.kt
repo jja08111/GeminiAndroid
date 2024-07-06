@@ -11,7 +11,7 @@ import io.jja08111.gemini.feature.chat.data.extension.convertToMessageGroups
 import io.jja08111.gemini.model.MessageGroup
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapLatest
-import java.util.Date
+import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,7 +46,7 @@ class ChatLocalDataSource @Inject constructor(
     prompt: String,
     responseIds: List<String>,
   ) {
-    val now = Date().time
+    val now = LocalDateTime.now()
     messageDao.insert(
       PromptEntity(
         id = promptId,
@@ -70,7 +70,7 @@ class ChatLocalDataSource @Inject constructor(
   }
 
   suspend fun insertRoom(roomId: String, title: String) {
-    roomDao.insert(RoomEntity(id = roomId, createdAt = Date().time, title = title))
+    roomDao.insert(RoomEntity(id = roomId, createdAt = LocalDateTime.now(), title = title))
   }
 
   suspend fun insertResponsesAndRemoveError(
@@ -85,7 +85,7 @@ class ChatLocalDataSource @Inject constructor(
         roomId = roomId,
         parentPromptId = promptId,
         text = "",
-        createdAt = Date().time,
+        createdAt = LocalDateTime.now(),
         state = ModelResponseStateEntity.Generating,
         selected = index == 0,
       )

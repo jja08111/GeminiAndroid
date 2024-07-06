@@ -34,7 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import io.jja08111.gemini.model.Room
-import java.util.Date
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import kotlin.math.abs
 
 @Composable
@@ -168,7 +170,12 @@ internal fun RoomTile(modifier: Modifier = Modifier, room: Room, onClick: () -> 
   }
 }
 
-fun Date.toTimeSpanText(): String {
-  val now = Date().time
-  return DateUtils.getRelativeTimeSpanString(time, now, DateUtils.DAY_IN_MILLIS).toString()
+fun LocalDateTime.toTimeSpanText(): String {
+  val now = Instant.now().toEpochMilli()
+  val defaultZone = ZoneId.systemDefault()
+  return DateUtils.getRelativeTimeSpanString(
+    this.atZone(defaultZone).toInstant().toEpochMilli(),
+    now,
+    DateUtils.DAY_IN_MILLIS,
+  ).toString()
 }

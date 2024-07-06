@@ -1,6 +1,6 @@
 package io.jja08111.gemini.model
 
-import java.util.Date
+import java.time.LocalDateTime
 
 data class ModelResponse(
   val id: String = createId(),
@@ -8,5 +8,5 @@ data class ModelResponse(
   val roomId: String,
   val selected: Boolean,
   val state: ModelResponseState = ModelResponseState.Generating,
-  val createdAt: Date,
+  val createdAt: LocalDateTime,
 )

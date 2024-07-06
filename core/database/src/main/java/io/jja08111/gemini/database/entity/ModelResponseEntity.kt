@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import java.time.LocalDateTime
 
 @Entity(
   tableName = "model_response",
@@ -29,5 +30,5 @@ data class ModelResponseEntity(
   @ColumnInfo("text") val text: String,
   @ColumnInfo("state") val state: ModelResponseStateEntity,
   @ColumnInfo("selected") val selected: Boolean,
-  @ColumnInfo("created_at") val createdAt: Long,
+  @ColumnInfo("created_at") val createdAt: LocalDateTime,
 )

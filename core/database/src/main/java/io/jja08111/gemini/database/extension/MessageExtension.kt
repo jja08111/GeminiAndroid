@@ -6,14 +6,13 @@ import io.jja08111.gemini.database.entity.PromptEntity
 import io.jja08111.gemini.model.ModelResponse
 import io.jja08111.gemini.model.ModelResponseState
 import io.jja08111.gemini.model.Prompt
-import java.util.Date
 
 fun PromptEntity.toDomain() =
   Prompt(
     id = id,
     roomId = roomId,
     text = text,
-    createdAt = Date(createdAt),
+    createdAt = createdAt,
   )
 
 fun ModelResponseEntity.toDomain() =
@@ -23,7 +22,7 @@ fun ModelResponseEntity.toDomain() =
     selected = selected,
     text = text,
     state = state.toDomain(),
-    createdAt = Date(createdAt),
+    createdAt = createdAt,
   )
 
 fun ModelResponseStateEntity.toDomain() =
