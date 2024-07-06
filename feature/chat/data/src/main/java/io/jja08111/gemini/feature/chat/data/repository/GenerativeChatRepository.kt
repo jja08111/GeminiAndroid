@@ -133,10 +133,7 @@ class GenerativeChatRepository @Inject constructor(
   ): Result<Unit> {
     return suspendCancellableCoroutine { continuation ->
       coroutineScope.launch {
-        val prompt = content {
-          role = ROLE_USER
-          text(message)
-        }
+        val prompt = content(ROLE_USER) { text(message) }
 
         generateContentStream(*history.toTypedArray(), prompt)
           .onEach { response ->
