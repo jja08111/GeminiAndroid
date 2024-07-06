@@ -16,16 +16,14 @@ interface RoomDao {
     """
       SELECT 
         room.*,
-        COALESCE(prompt.created_at, room.created_at) AS activated_at
+        COALESCE(recent_prompt.max_created_at, room.created_at) AS activated_at
       FROM room
         LEFT JOIN (
-          SELECT room_id, MAX(created_at) AS maxCreatedAt
+          SELECT room_id, MAX(prompt.created_at) AS max_created_at
           FROM prompt
           GROUP BY room_id
         ) AS recent_prompt ON room.id = recent_prompt.room_id
-        LEFT JOIN prompt ON recent_prompt.room_id = prompt.room_id 
-          AND recent_prompt.maxCreatedAt = prompt.created_at
-      ORDER BY COALESCE(recent_prompt.maxCreatedAt, room.created_at) DESC
+      ORDER BY activated_at DESC
     """,
   )
   fun getRooms(): PagingSource<Int, RoomWithActivatedTime>
