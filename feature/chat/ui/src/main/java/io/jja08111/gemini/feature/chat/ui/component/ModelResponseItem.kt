@@ -47,6 +47,7 @@ internal fun ModelResponseItem(
 
   Column(
     modifier = Modifier
+      .fillMaxWidth()
       .combinedClickable(onClick = {}, onLongClick = onLongClick)
       .then(modifier),
   ) {
