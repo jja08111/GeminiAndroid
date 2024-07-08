@@ -125,6 +125,32 @@ class GenerativeChatRepository @Inject constructor(
     )
   }
 
+  override suspend fun regenerateResponse(responseId: String): Result<Unit> {
+    val model = generativeModel ?: throwNotJoinedError()
+    val roomId = joinedRoomId ?: throwNotJoinedError()
+    val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
+    val messageGroups = messageGroupStream.first()
+    val messageGroup = messageGroups.firstOrNull {
+      it.selectedResponse.id == responseId
+    } ?: error("Message group list is empty when regenerating response")
+    val prompt = messageGroup.prompt
+    val promptId = prompt.id
+    val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
+
+    chatLocalDataSource.insertAndUnselectOldResponses(
+      newResponseIds = responseTextBuilders.map { it.id },
+      roomId = roomId,
+      promptId = promptId,
+    )
+
+    return model.generateTextMessageStream(
+      message = prompt.text,
+      history = messageGroups.flatMap(MessageGroup::toContents),
+      promptId = promptId,
+      responseTextBuilders = responseTextBuilders,
+    )
+  }
+
   private suspend fun GenerativeModel.generateTextMessageStream(
     message: String,
     history: List<Content>,

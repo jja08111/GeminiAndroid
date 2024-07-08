@@ -39,6 +39,22 @@ abstract class MessageDao {
     deleteResponseById(responseIdToRemove)
   }
 
+  @Transaction
+  open suspend fun insertAndUnselectOldResponses(modelResponses: List<ModelResponseEntity>) {
+    require(modelResponses.isNotEmpty())
+    unselectResponseByParentPromptId(modelResponses.first().parentPromptId)
+    insert(modelResponses)
+  }
+
+  @Query(
+    """
+      UPDATE model_response
+      SET selected = 0
+      WHERE parent_prompt_id = :promptId
+    """,
+  )
+  abstract suspend fun unselectResponseByParentPromptId(promptId: String)
+
   @Update(entity = ModelResponseEntity::class)
   abstract suspend fun updateAll(message: List<ModelResponseContentPartial>)
 

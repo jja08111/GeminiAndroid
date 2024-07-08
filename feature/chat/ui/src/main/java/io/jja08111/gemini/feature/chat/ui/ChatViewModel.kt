@@ -67,6 +67,13 @@ class ChatViewModel @Inject constructor(
     }
   }
 
+  fun regenerateResponse(responseId: String) {
+    intent {
+      chatRepository.regenerateResponse(responseId)
+        .onFailure(::handleChatException)
+    }
+  }
+
   private fun handleChatException(throwable: Throwable) {
     Log.e(TAG, "Error caused when generating response. $throwable")
     intent {

@@ -13,5 +13,7 @@ interface ChatRepository {
 
   suspend fun regenerateOnError(): Result<Unit>
 
+  suspend fun regenerateResponse(responseId: String): Result<Unit>
+
   fun exit()
 }

@@ -70,6 +70,7 @@ internal fun ChatScreen(
   onInputUpdate: (String) -> Unit,
   onSendClick: (String) -> Unit,
   onRegenerateOnErrorClick: () -> Unit,
+  onRegenerateResponseClick: (String) -> Unit,
 ) {
   val messageGroups by uiState.messageGroupStream.collectAsStateWithLifecycle(emptyList())
   val isGenerating by uiState.isGenerating.collectAsStateWithLifecycle(false)
@@ -161,7 +162,12 @@ internal fun ChatScreen(
           ModelResponseDropdownMenu(
             state = modelResponseDropdownMenuState,
             onDismissRequest = modelResponseDropdownMenuState::hide,
-            onRegenerateClick = { modelResponseDropdownMenuState.hide() },
+            onRegenerateClick = {
+              val selected = modelResponseDropdownMenuState.selectedModelResponse
+              checkNotNull(selected)
+              onRegenerateResponseClick(selected.id)
+              modelResponseDropdownMenuState.hide()
+            },
           )
         }
       }
