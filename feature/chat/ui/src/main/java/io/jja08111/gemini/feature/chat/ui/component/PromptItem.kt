@@ -27,7 +27,7 @@ internal fun ColumnScope.PromptItem(modifier: Modifier = Modifier, text: String)
       .clip(
         largeShape.copy(
           topStart = largeShape.topStart,
-          topEnd = CornerSize(0.dp),
+          topEnd = CornerSize(2.dp),
         ),
       )
       .background(color = MaterialTheme.colorScheme.secondaryContainer)
