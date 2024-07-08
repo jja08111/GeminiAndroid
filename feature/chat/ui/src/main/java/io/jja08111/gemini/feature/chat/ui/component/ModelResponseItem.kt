@@ -1,6 +1,8 @@
 package io.jja08111.gemini.feature.chat.ui.component
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -32,15 +34,22 @@ import androidx.compose.ui.unit.dp
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import io.jja08111.gemini.core.ui.R
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun ModelResponseItem(
+  modifier: Modifier = Modifier,
   text: String,
   isLoading: Boolean = false,
   isError: Boolean = false,
+  onLongClick: () -> Unit,
 ) {
   val textColor = LocalContentColor.current
 
-  Column {
+  Column(
+    modifier = Modifier
+      .combinedClickable(onClick = {}, onLongClick = onLongClick)
+      .then(modifier),
+  ) {
     Row(modifier = Modifier.align(Alignment.Start)) {
       Icon(
         modifier = Modifier
@@ -65,6 +74,7 @@ internal fun ModelResponseItem(
       else -> {
         MarkdownText(
           modifier = Modifier.align(Alignment.Start),
+          disableLinkMovementMethod = true,
           markdown = text,
           style = MaterialTheme.typography.bodyLarge.copy(
             color = textColor,

@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -52,7 +53,10 @@ import io.jja08111.gemini.feature.chat.ui.component.ActionBar
 import io.jja08111.gemini.feature.chat.ui.component.ActionBarTrailingButtonType
 import io.jja08111.gemini.feature.chat.ui.component.GotoBottomButton
 import io.jja08111.gemini.feature.chat.ui.component.MessageGroup
+import io.jja08111.gemini.feature.chat.ui.component.ModelResponseDropdownMenu
+import io.jja08111.gemini.feature.chat.ui.component.rememberModelResponseDropdownMenuState
 import io.jja08111.gemini.model.MessageGroup
+import io.jja08111.gemini.model.ModelResponse
 import io.jja08111.gemini.model.ModelResponseState
 import kotlinx.coroutines.launch
 
@@ -82,6 +86,7 @@ internal fun ChatScreen(
     }
   }
   val lastResponseText = messageGroups.lastOrNull()?.selectedResponse?.text
+  val modelResponseDropdownMenuState = rememberModelResponseDropdownMenuState()
 
   LaunchedEffect(lastResponseText?.length) {
     if (previousCanScrollForward == true || lastResponseText == null) {
@@ -120,7 +125,11 @@ internal fun ChatScreen(
         )
       },
     ) { innerPadding ->
-      Column(modifier = Modifier.padding(innerPadding)) {
+      Column(
+        modifier = Modifier
+          .padding(innerPadding)
+          .pointerInput(Unit, modelResponseDropdownMenuState::awaitPressEvent),
+      ) {
         BoxWithConstraints(
           modifier = Modifier
             .fillMaxWidth()
@@ -133,6 +142,7 @@ internal fun ChatScreen(
               modifier = Modifier.fillMaxSize(),
               listState = listState,
               messageGroups = messageGroups,
+              onModelResponseLongClick = modelResponseDropdownMenuState::expand,
             )
             if (showGotoBottomButton) {
               GotoBottomButton(
@@ -148,6 +158,11 @@ internal fun ChatScreen(
             }
           }
           VerticalGradient()
+          ModelResponseDropdownMenu(
+            state = modelResponseDropdownMenuState,
+            onDismissRequest = modelResponseDropdownMenuState::hide,
+            onRegenerateClick = { modelResponseDropdownMenuState.hide() },
+          )
         }
       }
     }
@@ -195,11 +210,12 @@ private fun BoxWithConstraintsScope.MessageGroupList(
   modifier: Modifier = Modifier,
   listState: LazyListState,
   messageGroups: List<MessageGroup>,
+  onModelResponseLongClick: (ModelResponse) -> Unit,
 ) {
   LazyColumn(
     modifier = modifier,
     state = listState,
-    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 2.dp),
+    contentPadding = PaddingValues(top = 2.dp),
   ) {
     items(
       items = messageGroups,
@@ -212,6 +228,7 @@ private fun BoxWithConstraintsScope.MessageGroupList(
           .heightIn(min = if (isLast) maxHeight else 0.dp)
           .padding(bottom = if (isLast) 16.dp else 0.dp),
         messageGroup = messageGroup,
+        onModelResponseLongClick = onModelResponseLongClick,
       )
     }
   }
