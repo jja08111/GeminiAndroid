@@ -51,7 +51,7 @@ import io.jja08111.gemini.core.ui.rememberPrevious
 import io.jja08111.gemini.feature.chat.ui.component.ActionBar
 import io.jja08111.gemini.feature.chat.ui.component.ActionBarTrailingButtonType
 import io.jja08111.gemini.feature.chat.ui.component.GotoBottomButton
-import io.jja08111.gemini.feature.chat.ui.component.MessageGroupItem
+import io.jja08111.gemini.feature.chat.ui.component.MessageGroup
 import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.ModelResponseState
 import kotlinx.coroutines.launch
@@ -207,7 +207,7 @@ private fun BoxWithConstraintsScope.MessageGroupList(
       key = { it.prompt.id },
     ) { messageGroup ->
       val isLast = messageGroup == messageGroups.lastOrNull()
-      MessageGroupItem(
+      MessageGroup(
         modifier = Modifier
           .fillMaxWidth()
           .heightIn(min = if (isLast) maxHeight else 0.dp)
