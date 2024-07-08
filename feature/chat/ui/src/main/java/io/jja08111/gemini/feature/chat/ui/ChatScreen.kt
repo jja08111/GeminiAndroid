@@ -78,8 +78,7 @@ internal fun ChatScreen(
   var fetched by remember { mutableStateOf(false) }
   val showGotoBottomButton by remember {
     derivedStateOf {
-      listState.firstVisibleItemIndex != listState.layoutInfo.totalItemsCount - 1 ||
-        listState.firstVisibleItemScrollOffset > 80
+      listState.firstVisibleItemIndex != listState.layoutInfo.totalItemsCount - 1
     }
   }
   val lastResponseText = messageGroups.lastOrNull()?.selectedResponse?.text
