@@ -76,6 +76,7 @@ internal fun BoxWithConstraintsScope.ModelResponseDropdownMenu(
   modifier: Modifier = Modifier,
   state: ModelResponseDropdownMenuState = rememberModelResponseDropdownMenuState(),
   onDismissRequest: () -> Unit,
+  onSelectResponseClick: () -> Unit,
   onRegenerateClick: () -> Unit,
 ) {
   DropdownMenu(
@@ -84,6 +85,10 @@ internal fun BoxWithConstraintsScope.ModelResponseDropdownMenu(
     expanded = state.expanded,
     onDismissRequest = onDismissRequest,
   ) {
+    DropdownMenuItem(
+      text = { Text("Select response") },
+      onClick = onSelectResponseClick,
+    )
     DropdownMenuItem(
       text = { Text("Regenerate") },
       onClick = onRegenerateClick,

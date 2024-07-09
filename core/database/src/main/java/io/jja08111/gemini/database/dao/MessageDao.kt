@@ -24,6 +24,24 @@ abstract class MessageDao {
     roomId: String,
   ): Flow<Map<PromptEntity, List<ModelResponseEntity>>>
 
+  @Query(
+    """
+      SELECT *
+      FROM prompt
+      WHERE prompt.id = :promptId
+    """,
+  )
+  abstract fun getPrompt(promptId: String): Flow<PromptEntity>
+
+  @Query(
+    """
+      SELECT *
+      FROM model_response
+      WHERE model_response.parent_prompt_id = :parentPromptId
+    """,
+  )
+  abstract fun getModelResponses(parentPromptId: String): Flow<List<ModelResponseEntity>>
+
   @Insert
   abstract suspend fun insert(prompt: PromptEntity, modelResponse: List<ModelResponseEntity>)
 
@@ -44,6 +62,12 @@ abstract class MessageDao {
     require(modelResponses.isNotEmpty())
     unselectResponseByParentPromptId(modelResponses.first().parentPromptId)
     insert(modelResponses)
+  }
+
+  @Transaction
+  open suspend fun changeSelectedResponse(promptId: String, newSelectedResponseId: String) {
+    unselectResponseByParentPromptId(promptId)
+    selectModelResponse(newSelectedResponseId)
   }
 
   @Query(
@@ -73,6 +97,15 @@ abstract class MessageDao {
     oldState: ModelResponseStateEntity,
     newState: ModelResponseStateEntity,
   )
+
+  @Query(
+    """
+        UPDATE model_response
+        SET selected = 1
+        WHERE id = :responseId
+    """,
+  )
+  abstract suspend fun selectModelResponse(responseId: String)
 
   @Query("DELETE FROM model_response WHERE id = :id")
   abstract suspend fun deleteResponseById(id: String)

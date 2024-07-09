@@ -3,6 +3,7 @@ package io.jja08111.gemini.feature.chat.ui.component
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.jja08111.gemini.model.MessageGroup
@@ -21,7 +22,13 @@ internal fun MessageGroup(
   Column(
     modifier = modifier,
   ) {
-    PromptItem(modifier = Modifier.padding(all = 16.dp), text = messageGroup.prompt.text)
+    PromptItem(
+      modifier = Modifier
+        .padding(all = 16.dp)
+        .padding(start = PromptItemHorizontalMargin)
+        .align(alignment = Alignment.End),
+      text = messageGroup.prompt.text,
+    )
     ModelResponseItem(
       modifier = Modifier.padding(all = 16.dp),
       text = modelResponse.text,

@@ -2,7 +2,6 @@ package io.jja08111.gemini.feature.chat.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CornerSize
@@ -14,24 +13,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import dev.jeziellago.compose.markdowntext.MarkdownText
 
-private val HorizontalMargin = 40.dp
+internal val PromptItemHorizontalMargin = 40.dp
 
 @Composable
-internal fun ColumnScope.PromptItem(modifier: Modifier = Modifier, text: String) {
+internal fun PromptItem(modifier: Modifier = Modifier, text: String) {
   val largeShape = MaterialTheme.shapes.large
   val textColor = MaterialTheme.colorScheme.onSecondaryContainer
 
   Box(
     modifier = modifier
-      .padding(start = HorizontalMargin)
       .clip(
         largeShape.copy(
           topStart = largeShape.topStart,
           topEnd = CornerSize(2.dp),
         ),
       )
-      .background(color = MaterialTheme.colorScheme.secondaryContainer)
-      .align(alignment = Alignment.End),
+      .background(color = MaterialTheme.colorScheme.secondaryContainer),
   ) {
     Row(
       modifier = Modifier

@@ -19,3 +19,15 @@ data object ChatMobileDestinations : MobileDestinations(route = "chat") {
     return "$route/$roomId"
   }
 }
+
+data object SelectResponseDestinations : MobileDestinations(route = "select-response") {
+  const val PROMPT_ID_ARG = "promptId"
+  val arguments = listOf(
+    navArgument(PROMPT_ID_ARG) { type = NavType.StringType },
+  )
+  val routeWithArg: String = "$route/{${PROMPT_ID_ARG}}"
+
+  fun createRoute(promptId: String): String {
+    return "$route/$promptId"
+  }
+}

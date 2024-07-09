@@ -7,9 +7,13 @@ import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.database.entity.PromptEntity
 import io.jja08111.gemini.database.entity.RoomEntity
 import io.jja08111.gemini.database.entity.partial.ModelResponseContentPartial
+import io.jja08111.gemini.database.extension.toDomain
 import io.jja08111.gemini.feature.chat.data.extension.convertToMessageGroups
 import io.jja08111.gemini.model.MessageGroup
+import io.jja08111.gemini.model.ModelResponse
+import io.jja08111.gemini.model.Prompt
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -110,5 +114,20 @@ class ChatLocalDataSource @Inject constructor(
       )
     }
     messageDao.insertAndUnselectOldResponses(modelResponses = responses)
+  }
+
+  fun getPromptBy(promptId: String): Flow<Prompt> {
+    return messageDao.getPrompt(promptId = promptId).map(PromptEntity::toDomain)
+  }
+
+  fun getModelResponsesBy(parentPromptId: String): Flow<List<ModelResponse>> {
+    return messageDao.getModelResponses(parentPromptId = parentPromptId)
+      .map {
+        it.map(ModelResponseEntity::toDomain)
+      }
+  }
+
+  suspend fun changeSelectedResponse(promptId: String, responseId: String) {
+    messageDao.changeSelectedResponse(promptId = promptId, newSelectedResponseId = responseId)
   }
 }

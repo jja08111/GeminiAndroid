@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -67,10 +66,12 @@ internal fun ChatScreen(
   snackbarHostState: SnackbarHostState,
   listState: LazyListState = rememberLazyListState(),
   onBackClick: () -> Unit,
-  onInputUpdate: (String) -> Unit,
-  onSendClick: (String) -> Unit,
+  onInputUpdate: (prompt: String) -> Unit,
+  onSendClick: (prompt: String) -> Unit,
   onRegenerateOnErrorClick: () -> Unit,
-  onRegenerateResponseClick: (String) -> Unit,
+  onSelectResponseClick: (promptId: String) -> Unit,
+  // TODO: Change String type to value class
+  onRegenerateResponseClick: (responseId: String) -> Unit,
 ) {
   val messageGroups by uiState.messageGroupStream.collectAsStateWithLifecycle(emptyList())
   val isGenerating by uiState.isGenerating.collectAsStateWithLifecycle(false)
@@ -162,6 +163,14 @@ internal fun ChatScreen(
           ModelResponseDropdownMenu(
             state = modelResponseDropdownMenuState,
             onDismissRequest = modelResponseDropdownMenuState::hide,
+            onSelectResponseClick = {
+              val selected = modelResponseDropdownMenuState.selectedModelResponse
+              val messageGroup = messageGroups.firstOrNull {
+                it.selectedResponse.id == selected?.id
+              } ?: error("Cannot find message group by selected response ID.")
+              onSelectResponseClick(messageGroup.prompt.id)
+              modelResponseDropdownMenuState.hide()
+            },
             onRegenerateClick = {
               val selected = modelResponseDropdownMenuState.selectedModelResponse
               checkNotNull(selected)
@@ -221,7 +230,6 @@ private fun BoxWithConstraintsScope.MessageGroupList(
   LazyColumn(
     modifier = modifier,
     state = listState,
-    contentPadding = PaddingValues(top = 2.dp),
   ) {
     items(
       items = messageGroups,

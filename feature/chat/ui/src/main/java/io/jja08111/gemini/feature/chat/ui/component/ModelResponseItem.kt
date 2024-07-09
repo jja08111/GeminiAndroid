@@ -10,14 +10,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,21 +39,72 @@ import androidx.compose.ui.unit.dp
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import io.jja08111.gemini.core.ui.R
 
+private fun emptyCallback() {
+  // Nothing
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+internal fun ExpandableModelResponseItem(
+  modifier: Modifier = Modifier,
+  title: String? = null,
+  text: String,
+  expanded: Boolean,
+  isLoading: Boolean = false,
+  isError: Boolean = false,
+  onExpandClick: (Boolean) -> Unit,
+  onClick: () -> Unit = ::emptyCallback,
+  onLongClick: (() -> Unit)? = null,
+) {
+  Card(
+    modifier = modifier
+      .then(if (expanded) Modifier else Modifier.heightIn(max = 136.dp))
+      .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+  ) {
+    Box {
+      ModelResponseItem(
+        modifier = Modifier.padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 48.dp),
+        title = title,
+        text = text,
+        isLoading = isLoading,
+        isError = isError,
+        onClick = onClick,
+        onLongClick = onLongClick,
+      )
+      IconButton(
+        modifier = Modifier.align(Alignment.BottomEnd),
+        onClick = { onExpandClick(!expanded) },
+      ) {
+        Icon(
+          imageVector = if (expanded) {
+            Icons.Default.KeyboardArrowUp
+          } else {
+            Icons.Default.KeyboardArrowDown
+          },
+          contentDescription = if (expanded) "Collapse response" else "Expand response",
+        )
+      }
+    }
+  }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun ModelResponseItem(
   modifier: Modifier = Modifier,
+  title: String? = null,
   text: String,
   isLoading: Boolean = false,
   isError: Boolean = false,
-  onLongClick: () -> Unit,
+  onClick: () -> Unit = ::emptyCallback,
+  onLongClick: (() -> Unit)? = null,
 ) {
   val textColor = LocalContentColor.current
 
   Column(
     modifier = Modifier
       .fillMaxWidth()
-      .combinedClickable(onClick = {}, onLongClick = onLongClick)
+      .combinedClickable(onClick = onClick, onLongClick = onLongClick)
       .then(modifier),
   ) {
     Row(modifier = Modifier.align(Alignment.Start)) {
@@ -61,7 +117,7 @@ internal fun ModelResponseItem(
         contentDescription = "Gemini avatar",
       )
       Text(
-        text = "Gemini",
+        text = title ?: "Gemini",
         style = MaterialTheme.typography.titleMedium.copy(
           fontWeight = FontWeight.Bold,
           color = textColor,
@@ -77,6 +133,7 @@ internal fun ModelResponseItem(
           modifier = Modifier.align(Alignment.Start),
           disableLinkMovementMethod = true,
           markdown = text,
+          truncateOnTextOverflow = true,
           style = MaterialTheme.typography.bodyLarge.copy(
             color = textColor,
           ),
