@@ -1,5 +1,6 @@
 package io.jja08111.gemini.feature.chat.ui.component
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -58,7 +58,7 @@ internal fun ExpandableModelResponseItem(
 ) {
   Card(
     modifier = modifier
-      .then(if (expanded) Modifier else Modifier.heightIn(max = 136.dp))
+      .animateContentSize()
       .combinedClickable(onClick = onClick, onLongClick = onLongClick),
   ) {
     Box {
@@ -66,6 +66,7 @@ internal fun ExpandableModelResponseItem(
         modifier = Modifier.padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 48.dp),
         title = title,
         text = text,
+        maxLines = if (expanded) Int.MAX_VALUE else 3,
         isLoading = isLoading,
         isError = isError,
         onClick = onClick,
@@ -94,6 +95,7 @@ internal fun ModelResponseItem(
   modifier: Modifier = Modifier,
   title: String? = null,
   text: String,
+  maxLines: Int = Int.MAX_VALUE,
   isLoading: Boolean = false,
   isError: Boolean = false,
   onClick: () -> Unit = ::emptyCallback,
@@ -132,6 +134,7 @@ internal fun ModelResponseItem(
         MarkdownText(
           modifier = Modifier.align(Alignment.Start),
           disableLinkMovementMethod = true,
+          maxLines = maxLines,
           markdown = text,
           truncateOnTextOverflow = true,
           style = MaterialTheme.typography.bodyLarge.copy(
