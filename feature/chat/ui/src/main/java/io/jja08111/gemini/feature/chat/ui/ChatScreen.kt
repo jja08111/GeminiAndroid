@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,40 +75,21 @@ internal fun ChatScreen(
   onRegenerateResponseClick: (responseId: String) -> Unit,
 ) {
   val messageGroups by uiState.messageGroupStream.collectAsStateWithLifecycle(emptyList())
-  val isGenerating by uiState.isGenerating.collectAsStateWithLifecycle(false)
+  val isGenerating =
+    messageGroups.lastOrNull()?.selectedResponse?.state == ModelResponseState.Generating
   val lastMessageGroup = messageGroups.lastOrNull()
   val hasLastResponseError = lastMessageGroup?.selectedResponse?.state == ModelResponseState.Error
   val canSendMessage = !isGenerating && uiState.inputMessage.isNotEmpty() && !hasLastResponseError
-  val previousCanScrollForward = rememberPrevious(listState.canScrollForward)
   val coroutineScope = rememberCoroutineScope()
   val keyboardController = LocalSoftwareKeyboardController.current
-  var fetched by remember { mutableStateOf(false) }
   val showGotoBottomButton by remember {
     derivedStateOf {
       listState.firstVisibleItemIndex != listState.layoutInfo.totalItemsCount - 1
     }
   }
-  val lastResponseText = messageGroups.lastOrNull()?.selectedResponse?.text
   val modelResponseDropdownMenuState = rememberModelResponseDropdownMenuState()
 
-  LaunchedEffect(lastResponseText?.length) {
-    if (previousCanScrollForward == true || lastResponseText == null) {
-      return@LaunchedEffect
-    }
-    val lastItemIndex = listState.layoutInfo.totalItemsCount - 1
-    if (listState.firstVisibleItemIndex == lastItemIndex) {
-      listState.scrollToBottom(animated = false)
-    } else {
-      listState.scrollToLastMessageGroup(animated = true)
-    }
-  }
-
-  LaunchedEffect(messageGroups.size) {
-    if (messageGroups.isNotEmpty()) {
-      listState.scrollToLastMessageGroup(animated = fetched)
-      fetched = true
-    }
-  }
+  ScrollPositionSideEffect(messageGroups = messageGroups, listState = listState)
 
   Column(modifier = Modifier.fillMaxSize()) {
     Scaffold(
@@ -294,14 +276,26 @@ private suspend fun LazyListState.scrollToLastMessageGroup(animated: Boolean = f
   }
 }
 
-private suspend fun LazyListState.scrollToBottom(animated: Boolean = false) {
-  val itemCount = layoutInfo.totalItemsCount
-  if (itemCount > 0) {
-    val targetIndex = itemCount - 1
-    if (animated) {
-      animateScrollToItem(targetIndex, scrollOffset = Int.MAX_VALUE)
-    } else {
-      scrollToItem(targetIndex, scrollOffset = Int.MAX_VALUE)
+@Composable
+private fun ScrollPositionSideEffect(messageGroups: List<MessageGroup>, listState: LazyListState) {
+  val messageGroupSize = messageGroups.size
+  val lastResponseTextLength = messageGroups.lastOrNull()?.selectedResponse?.text?.length ?: 0
+  val isMessageGroupNotEmpty = messageGroupSize > 0
+  val previousMessageGroupSize = rememberPrevious(current = messageGroupSize)
+  var isDoneInitScrolling by rememberSaveable { mutableStateOf(false) }
+
+  // If user send message, scroll to last message group
+  LaunchedEffect(messageGroupSize) {
+    if (previousMessageGroupSize != messageGroupSize && lastResponseTextLength == 0) {
+      listState.scrollToLastMessageGroup(animated = true)
+    }
+  }
+
+  // If Screen is initialized, scroll to last message group
+  LaunchedEffect(isMessageGroupNotEmpty) {
+    if (isMessageGroupNotEmpty && !isDoneInitScrolling) {
+      listState.scrollToLastMessageGroup(animated = false)
+      isDoneInitScrolling = true
     }
   }
 }
