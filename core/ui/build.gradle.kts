@@ -10,4 +10,5 @@ android {
 dependencies {
 
   implementation(libs.androidx.compose.ui)
+  implementation(libs.androidx.animation.android)
 }

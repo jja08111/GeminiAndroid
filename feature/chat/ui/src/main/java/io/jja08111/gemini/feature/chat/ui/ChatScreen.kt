@@ -88,6 +88,7 @@ internal fun ChatScreen(
     }
   }
   val modelResponseDropdownMenuState = rememberModelResponseDropdownMenuState()
+  var leadingExpanded by rememberSaveable { mutableStateOf(true) }
 
   ScrollPositionSideEffect(messageGroups = messageGroups, listState = listState)
 
@@ -173,7 +174,11 @@ internal fun ChatScreen(
       )
     } else {
       ActionBar(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
         inputMessage = uiState.inputMessage,
+        leadingExpanded = leadingExpanded,
         trailingButtonType = if (isGenerating) {
           ActionBarTrailingButtonType.Stop
         } else if (canSendMessage) {
@@ -186,6 +191,9 @@ internal fun ChatScreen(
           keyboardController?.hide()
         },
         onInputMessageChange = onInputUpdate,
+        onCameraClick = {},
+        onImageClick = {},
+        onExpandChange = { leadingExpanded = it },
       )
     }
   }

@@ -24,6 +24,7 @@ dependencies {
   implementation(libs.androidx.compose.material3)
   implementation(libs.androidx.hilt.navigation.compose)
   implementation(libs.androidx.lifecycle.compose)
+  implementation(libs.androidx.compose.material.icons)
 
   implementation(libs.compose.markdown)
 
