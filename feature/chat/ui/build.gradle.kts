@@ -26,6 +26,8 @@ dependencies {
   implementation(libs.androidx.lifecycle.compose)
   implementation(libs.androidx.compose.material.icons)
 
+  implementation(libs.glide.compose)
+
   implementation(libs.compose.markdown)
 
   implementation(libs.androidx.room.paging)

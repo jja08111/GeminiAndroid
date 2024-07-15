@@ -1,9 +1,11 @@
 package io.jja08111.gemini.feature.chat.ui
 
+import android.net.Uri
 import io.jja08111.gemini.model.MessageGroup
 import kotlinx.coroutines.flow.Flow
 
 data class ChatUiState(
   val messageGroupStream: Flow<List<MessageGroup>>,
   val inputMessage: String = "",
+  val attachedImageUri: Uri? = null,
 )

@@ -49,11 +49,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.jja08111.gemini.core.ui.rememberPrevious
-import io.jja08111.gemini.feature.chat.ui.component.ActionBar
-import io.jja08111.gemini.feature.chat.ui.component.ActionBarTrailingButtonType
+import io.jja08111.gemini.feature.chat.ui.component.GeminiTextField
 import io.jja08111.gemini.feature.chat.ui.component.GotoBottomButton
 import io.jja08111.gemini.feature.chat.ui.component.MessageGroup
 import io.jja08111.gemini.feature.chat.ui.component.ModelResponseDropdownMenu
+import io.jja08111.gemini.feature.chat.ui.component.TrailingButtonState
 import io.jja08111.gemini.feature.chat.ui.component.rememberModelResponseDropdownMenuState
 import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.ModelResponse
@@ -68,6 +68,8 @@ internal fun ChatScreen(
   listState: LazyListState = rememberLazyListState(),
   onBackClick: () -> Unit,
   onInputUpdate: (prompt: String) -> Unit,
+  onAlbumClick: () -> Unit,
+  onRemoveImageClick: () -> Unit,
   onSendClick: (prompt: String) -> Unit,
   onRegenerateOnErrorClick: () -> Unit,
   onSelectResponseClick: (promptId: String) -> Unit,
@@ -173,27 +175,29 @@ internal fun ChatScreen(
         onClick = onRegenerateOnErrorClick,
       )
     } else {
-      ActionBar(
+      GeminiTextField(
         modifier = Modifier
           .fillMaxWidth()
           .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
-        inputMessage = uiState.inputMessage,
+        text = uiState.inputMessage,
+        imageUri = uiState.attachedImageUri,
         leadingExpanded = leadingExpanded,
-        trailingButtonType = if (isGenerating) {
-          ActionBarTrailingButtonType.Stop
+        trailingButtonState = if (isGenerating) {
+          TrailingButtonState.Stop
         } else if (canSendMessage) {
-          ActionBarTrailingButtonType.Send
+          TrailingButtonState.Send
         } else {
-          ActionBarTrailingButtonType.Empty
+          TrailingButtonState.Empty
         },
         onSendClick = {
           onSendClick(it)
           keyboardController?.hide()
         },
-        onInputMessageChange = onInputUpdate,
+        onTextChange = onInputUpdate,
         onCameraClick = {},
-        onImageClick = {},
+        onAlbumClick = onAlbumClick,
         onExpandChange = { leadingExpanded = it },
+        onRemoveImageClick = onRemoveImageClick,
       )
     }
   }

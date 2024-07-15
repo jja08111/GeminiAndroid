@@ -1,5 +1,6 @@
 package io.jja08111.gemini.feature.chat.ui
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -44,6 +45,18 @@ class ChatViewModel @Inject constructor(
   fun updateInputMessage(message: String) {
     blockingIntent {
       reduce { state.copy(inputMessage = message) }
+    }
+  }
+
+  fun attachImage(imageUri: Uri) {
+    intent {
+      reduce { state.copy(attachedImageUri = imageUri) }
+    }
+  }
+
+  fun removeAttachedImage() {
+    intent {
+      reduce { state.copy(attachedImageUri = null) }
     }
   }
 

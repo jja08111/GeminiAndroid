@@ -1,5 +1,8 @@
 package io.jja08111.gemini.feature.chat.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -21,6 +24,14 @@ fun ChatRoute(
   val context = LocalContext.current
   val snackbarHostState = remember { SnackbarHostState() }
 
+  val launcher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.GetContent(),
+  ) { uri: Uri? ->
+    if (uri != null) {
+      viewModel.attachImage(uri)
+    }
+  }
+
   viewModel.collectSideEffect {
     when (it) {
       is ChatSideEffect.UserMessage -> snackbarHostState.showSnackbar(it.message.asString(context))
@@ -33,9 +44,11 @@ fun ChatRoute(
     listState = listState,
     onBackClick = popBackStack,
     onInputUpdate = viewModel::updateInputMessage,
+    onAlbumClick = { launcher.launch("image/*") },
     onSendClick = viewModel::sendTextMessage,
     onRegenerateOnErrorClick = viewModel::regenerateOnError,
     onSelectResponseClick = navigateToSelectResponse,
     onRegenerateResponseClick = viewModel::regenerateResponse,
+    onRemoveImageClick = viewModel::removeAttachedImage,
   )
 }
