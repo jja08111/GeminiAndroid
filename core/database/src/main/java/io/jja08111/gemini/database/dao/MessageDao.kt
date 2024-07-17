@@ -8,7 +8,10 @@ import androidx.room.Update
 import io.jja08111.gemini.database.entity.ModelResponseEntity
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.database.entity.PromptEntity
+import io.jja08111.gemini.database.entity.PromptImageEntity
 import io.jja08111.gemini.database.entity.partial.ModelResponseContentPartial
+import io.jja08111.gemini.database.entity.relation.PromptWithImages
+import io.jja08111.gemini.database.entity.relation.PromptWithResponsesAndImages
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -16,13 +19,13 @@ abstract class MessageDao {
   @Query(
     """
       SELECT * 
-      FROM prompt JOIN model_response ON prompt.id = model_response.parent_prompt_id
+      FROM prompt
       WHERE prompt.room_id = :roomId ORDER BY prompt.created_at ASC
     """,
   )
-  abstract fun getPromptAndResponses(
+  abstract fun getPromptWithResponsesAndImages(
     roomId: String,
-  ): Flow<Map<PromptEntity, List<ModelResponseEntity>>>
+  ): Flow<List<PromptWithResponsesAndImages>>
 
   @Query(
     """
@@ -31,7 +34,7 @@ abstract class MessageDao {
       WHERE prompt.id = :promptId
     """,
   )
-  abstract fun getPrompt(promptId: String): Flow<PromptEntity>
+  abstract fun getPromptWithImages(promptId: String): Flow<PromptWithImages>
 
   @Query(
     """
@@ -43,7 +46,11 @@ abstract class MessageDao {
   abstract fun getModelResponses(parentPromptId: String): Flow<List<ModelResponseEntity>>
 
   @Insert
-  abstract suspend fun insert(prompt: PromptEntity, modelResponse: List<ModelResponseEntity>)
+  abstract suspend fun insert(
+    prompt: PromptEntity,
+    images: List<PromptImageEntity>,
+    modelResponses: List<ModelResponseEntity>,
+  )
 
   @Insert
   abstract suspend fun insert(modelResponses: List<ModelResponseEntity>)

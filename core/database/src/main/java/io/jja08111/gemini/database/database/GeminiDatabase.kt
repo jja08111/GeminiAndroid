@@ -8,10 +8,16 @@ import io.jja08111.gemini.database.dao.MessageDao
 import io.jja08111.gemini.database.dao.RoomDao
 import io.jja08111.gemini.database.entity.ModelResponseEntity
 import io.jja08111.gemini.database.entity.PromptEntity
+import io.jja08111.gemini.database.entity.PromptImageEntity
 import io.jja08111.gemini.database.entity.RoomEntity
 
 @Database(
-  entities = [RoomEntity::class, PromptEntity::class, ModelResponseEntity::class],
+  entities = [
+    RoomEntity::class,
+    PromptEntity::class,
+    PromptImageEntity::class,
+    ModelResponseEntity::class,
+  ],
   version = 1,
 )
 @TypeConverters(value = [LocalDateTimeConverter::class])

@@ -1,17 +1,21 @@
 package io.jja08111.gemini.feature.chat.data.source
 
+import android.graphics.Bitmap
 import io.jja08111.gemini.database.dao.MessageDao
 import io.jja08111.gemini.database.dao.RoomDao
 import io.jja08111.gemini.database.entity.ModelResponseEntity
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.database.entity.PromptEntity
+import io.jja08111.gemini.database.entity.PromptImageEntity
 import io.jja08111.gemini.database.entity.RoomEntity
 import io.jja08111.gemini.database.entity.partial.ModelResponseContentPartial
+import io.jja08111.gemini.database.entity.relation.PromptWithImages
 import io.jja08111.gemini.database.extension.toDomain
 import io.jja08111.gemini.feature.chat.data.extension.convertToMessageGroups
 import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.ModelResponse
 import io.jja08111.gemini.model.Prompt
+import io.jja08111.gemini.model.createId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
@@ -21,6 +25,7 @@ import javax.inject.Singleton
 
 @Singleton
 class ChatLocalDataSource @Inject constructor(
+  private val promptImageLocalDataSource: PromptImageLocalDataSource,
   private val messageDao: MessageDao,
   private val roomDao: RoomDao,
 ) {
@@ -32,7 +37,7 @@ class ChatLocalDataSource @Inject constructor(
   }
 
   fun getMessageGroupStream(roomId: String): Flow<List<MessageGroup>> {
-    return messageDao.getPromptAndResponses(roomId).mapLatest(::convertToMessageGroups)
+    return messageDao.getPromptWithResponsesAndImages(roomId).mapLatest(::convertToMessageGroups)
   }
 
   suspend fun updateResponseContentPartials(partials: List<ModelResponseContentPartial>) {
@@ -48,18 +53,30 @@ class ChatLocalDataSource @Inject constructor(
     roomId: String,
     parentModelResponseId: String?,
     prompt: String,
+    imageBitmaps: List<Bitmap>,
     responseIds: List<String>,
   ) {
     val now = LocalDateTime.now()
+    val images = imageBitmaps.map { bitmap ->
+      PromptImageEntity(
+        id = createId(),
+        promptId = promptId,
+        path = promptImageLocalDataSource.saveImage(bitmap),
+        width = bitmap.width,
+        height = bitmap.height,
+      )
+    }
+
     messageDao.insert(
-      PromptEntity(
+      prompt = PromptEntity(
         id = promptId,
         roomId = roomId,
         parentModelResponseId = parentModelResponseId,
         text = prompt,
         createdAt = now,
       ),
-      responseIds.mapIndexed { index, id ->
+      images = images,
+      modelResponses = responseIds.mapIndexed { index, id ->
         ModelResponseEntity(
           id = id,
           roomId = roomId,
@@ -117,7 +134,7 @@ class ChatLocalDataSource @Inject constructor(
   }
 
   fun getPromptBy(promptId: String): Flow<Prompt> {
-    return messageDao.getPrompt(promptId = promptId).map(PromptEntity::toDomain)
+    return messageDao.getPromptWithImages(promptId = promptId).map(PromptWithImages::toDomain)
   }
 
   fun getModelResponsesBy(parentPromptId: String): Flow<List<ModelResponse>> {

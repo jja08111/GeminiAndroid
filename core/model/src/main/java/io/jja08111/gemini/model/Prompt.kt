@@ -7,4 +7,5 @@ data class Prompt(
   val roomId: String,
   val createdAt: LocalDateTime = LocalDateTime.now(),
   val text: String,
+  val images: List<PromptImage>,
 )

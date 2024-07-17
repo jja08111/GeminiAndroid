@@ -45,7 +45,7 @@ fun ChatRoute(
     onBackClick = popBackStack,
     onInputUpdate = viewModel::updateInputMessage,
     onAlbumClick = { launcher.launch("image/*") },
-    onSendClick = viewModel::sendTextMessage,
+    onSendClick = viewModel::sendMessage,
     onRegenerateOnErrorClick = viewModel::regenerateOnError,
     onSelectResponseClick = navigateToSelectResponse,
     onRegenerateResponseClick = viewModel::regenerateResponse,

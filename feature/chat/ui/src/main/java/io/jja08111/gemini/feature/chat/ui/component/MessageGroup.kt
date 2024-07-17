@@ -16,6 +16,7 @@ internal fun MessageGroup(
   messageGroup: MessageGroup,
   onModelResponseLongClick: (ModelResponse) -> Unit,
 ) {
+  val prompt = messageGroup.prompt
   val modelResponse = messageGroup.selectedResponse
   val modelResponseState = modelResponse.state
 
@@ -27,7 +28,8 @@ internal fun MessageGroup(
         .padding(all = 16.dp)
         .padding(start = PromptItemHorizontalMargin)
         .align(alignment = Alignment.End),
-      text = messageGroup.prompt.text,
+      text = prompt.text,
+      images = prompt.images,
     )
     ModelResponseItem(
       modifier = Modifier.padding(all = 16.dp),

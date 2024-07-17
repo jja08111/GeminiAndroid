@@ -1,5 +1,6 @@
 package io.jja08111.gemini.feature.chat.ui
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -70,7 +71,7 @@ internal fun ChatScreen(
   onInputUpdate: (prompt: String) -> Unit,
   onAlbumClick: () -> Unit,
   onRemoveImageClick: () -> Unit,
-  onSendClick: (prompt: String) -> Unit,
+  onSendClick: (prompt: String, imageUri: Uri?) -> Unit,
   onRegenerateOnErrorClick: () -> Unit,
   onSelectResponseClick: (promptId: String) -> Unit,
   // TODO: Change String type to value class
@@ -189,8 +190,8 @@ internal fun ChatScreen(
         } else {
           TrailingButtonState.Empty
         },
-        onSendClick = {
-          onSendClick(it)
+        onSendClick = { prompt, imageUri ->
+          onSendClick(prompt, imageUri)
           keyboardController?.hide()
         },
         onTextChange = onInputUpdate,

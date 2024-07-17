@@ -13,6 +13,7 @@ import io.jja08111.gemini.core.ui.Message
 import io.jja08111.gemini.feature.chat.data.repository.ChatRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.syntax.simple.blockingIntent
@@ -60,12 +61,15 @@ class ChatViewModel @Inject constructor(
     }
   }
 
-  fun sendTextMessage(message: String) {
+  fun sendMessage(message: String, imageUri: Uri?) {
     intent {
-      reduce { state.copy(inputMessage = "") }
-
-      chatRepository.sendTextMessage(
+      reduce { state.copy(inputMessage = "", attachedImageUri = null) }
+    }
+    viewModelScope.launch {
+      chatRepository.sendMessage(
         message = message,
+        // TODO: Implement multiple image selection UI
+        imageUris = if (imageUri != null) listOf(imageUri) else emptyList(),
         onRoomCreated = { stream ->
           intent { reduce { state.copy(messageGroupStream = stream) } }
         },

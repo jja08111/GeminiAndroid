@@ -4,6 +4,8 @@ import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
 import io.jja08111.gemini.database.entity.ModelResponseEntity
 import io.jja08111.gemini.database.entity.PromptEntity
+import io.jja08111.gemini.database.entity.PromptImageEntity
+import io.jja08111.gemini.database.entity.relation.PromptWithResponsesAndImages
 import io.jja08111.gemini.database.extension.toDomain
 import io.jja08111.gemini.feature.chat.data.model.ROLE_MODEL
 import io.jja08111.gemini.feature.chat.data.model.ROLE_USER
@@ -16,15 +18,21 @@ fun MessageGroup.toContents(): List<Content> {
 }
 
 internal fun convertToMessageGroups(
-  promptAndMessage: Map<PromptEntity, List<ModelResponseEntity>>,
+  promptWithResponsesAndImages: List<PromptWithResponsesAndImages>,
 ): List<MessageGroup> {
   val result = mutableListOf<MessageGroup>()
-  promptAndMessage.forEach { (prompt, responses) ->
+  promptWithResponsesAndImages.forEach {
+      (
+        prompt: PromptEntity,
+        images: List<PromptImageEntity>,
+        responses: List<ModelResponseEntity>,
+      ),
+    ->
     val selectedResponse = responses.find { it.selected } ?: error("There is no selected response.")
     val lastResponse = result.lastOrNull()?.selectedResponse
     if (result.isEmpty() || prompt.parentModelResponseId == lastResponse?.id) {
       val messageGroup = MessageGroup(
-        prompt = prompt.toDomain(),
+        prompt = prompt.toDomain(images = images),
         selectedResponse = selectedResponse.toDomain(),
         responseCount = responses.size,
       )

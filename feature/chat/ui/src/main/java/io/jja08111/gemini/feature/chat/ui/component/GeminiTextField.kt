@@ -63,7 +63,7 @@ internal fun GeminiTextField(
   trailingButtonState: TrailingButtonState,
   leadingExpanded: Boolean = true,
   onExpandChange: (Boolean) -> Unit,
-  onSendClick: (String) -> Unit,
+  onSendClick: (String, Uri?) -> Unit,
   onCameraClick: () -> Unit,
   onAlbumClick: () -> Unit,
   onRemoveImageClick: () -> Unit,
@@ -137,7 +137,7 @@ internal fun GeminiTextField(
             // No content
           }
 
-          TrailingButtonState.Send -> SendButton(onClick = { onSendClick(text) })
+          TrailingButtonState.Send -> SendButton(onClick = { onSendClick(text, imageUri) })
 
           TrailingButtonState.Stop -> {
             // TODO: 정지 버튼으로 바꾸기
@@ -277,7 +277,7 @@ private fun EmptyGeminiTextFieldPreview() {
       trailingButtonState = TrailingButtonState.Send,
       onCameraClick = {},
       onAlbumClick = {},
-      onSendClick = {},
+      onSendClick = { _, _ -> },
       onExpandChange = {},
       onRemoveImageClick = {},
     )
@@ -296,7 +296,7 @@ private fun GeminiTextFieldPreview() {
       trailingButtonState = TrailingButtonState.Send,
       onCameraClick = {},
       onAlbumClick = {},
-      onSendClick = {},
+      onSendClick = { _, _ -> },
       onExpandChange = {},
       onRemoveImageClick = {},
     )

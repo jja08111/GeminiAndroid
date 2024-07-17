@@ -1,10 +1,13 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
+import android.graphics.Bitmap
+import android.net.Uri
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import io.github.jja08111.core.common.di.IoDispatcher
+import io.github.jja08111.core.common.image.BitmapCreator
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
 import io.jja08111.gemini.feature.chat.data.extension.toContents
@@ -14,6 +17,7 @@ import io.jja08111.gemini.feature.chat.data.model.MODEL_NAME
 import io.jja08111.gemini.feature.chat.data.model.ROLE_USER
 import io.jja08111.gemini.feature.chat.data.model.ResponseTextBuilder
 import io.jja08111.gemini.feature.chat.data.source.ChatLocalDataSource
+import io.jja08111.gemini.feature.chat.data.source.PromptImageLocalDataSource
 import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.createId
 import kotlinx.coroutines.CoroutineDispatcher
@@ -34,6 +38,8 @@ import kotlin.coroutines.resume
 class GenerativeChatRepository @Inject constructor(
   @IoDispatcher externalDispatcher: CoroutineDispatcher,
   private val chatLocalDataSource: ChatLocalDataSource,
+  private val promptImageLocalDataSource: PromptImageLocalDataSource,
+  private val bitmapCreator: BitmapCreator,
 ) : ChatRepository {
   private val coroutineScope = CoroutineScope(SupervisorJob() + externalDispatcher)
   private var joinedRoomId: String? = null
@@ -62,8 +68,9 @@ class GenerativeChatRepository @Inject constructor(
     }
   }
 
-  override suspend fun sendTextMessage(
+  override suspend fun sendMessage(
     message: String,
+    imageUris: List<Uri>,
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit> {
     val roomId = joinedRoomId ?: throwNotJoinedError()
@@ -73,16 +80,23 @@ class GenerativeChatRepository @Inject constructor(
     val isNewChat = messageGroups.isEmpty()
 
     if (isNewChat) {
-      chatLocalDataSource.insertRoom(roomId = roomId, title = message)
+      val title = when {
+        message.isNotEmpty() -> message
+        imageUris.isNotEmpty() -> "Image question"
+        else -> error("Message is empty with null image")
+      }
+      chatLocalDataSource.insertRoom(roomId = roomId, title = title)
       onRoomCreated(messageGroupStream)
     }
 
     val promptId = createId()
     val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
     val parentModelResponseId = messageGroups.lastOrNull()?.selectedResponse?.id
+    val images = imageUris.map { bitmapCreator.create(it) }
 
     chatLocalDataSource.insertInitialMessageGroup(
       prompt = message,
+      imageBitmaps = images,
       roomId = roomId,
       promptId = promptId,
       responseIds = responseTextBuilders.map { it.id },
@@ -91,6 +105,7 @@ class GenerativeChatRepository @Inject constructor(
 
     return model.generateTextMessageStream(
       message = message,
+      images = images,
       history = messageGroups.flatMap(MessageGroup::toContents),
       promptId = promptId,
       responseTextBuilders = responseTextBuilders,
@@ -117,6 +132,7 @@ class GenerativeChatRepository @Inject constructor(
 
     return model.generateTextMessageStream(
       message = lastPrompt.text,
+      images = lastPrompt.images.map { promptImageLocalDataSource.loadImage(it.path) },
       history = messageGroups
         .dropLast(1)
         .flatMap(MessageGroup::toContents),
@@ -145,6 +161,7 @@ class GenerativeChatRepository @Inject constructor(
 
     return model.generateTextMessageStream(
       message = prompt.text,
+      images = prompt.images.map { promptImageLocalDataSource.loadImage(it.path) },
       history = messageGroups.flatMap(MessageGroup::toContents),
       promptId = promptId,
       responseTextBuilders = responseTextBuilders,
@@ -153,13 +170,18 @@ class GenerativeChatRepository @Inject constructor(
 
   private suspend fun GenerativeModel.generateTextMessageStream(
     message: String,
+    images: List<Bitmap>,
     history: List<Content>,
     promptId: String,
     responseTextBuilders: List<ResponseTextBuilder>,
   ): Result<Unit> {
     return suspendCancellableCoroutine { continuation ->
       coroutineScope.launch {
-        val prompt = content(ROLE_USER) { text(message) }
+        val prompt = content {
+          role = ROLE_USER
+          images.forEach(::image)
+          text(message)
+        }
 
         generateContentStream(*history.toTypedArray(), prompt)
           .onEach { response ->
