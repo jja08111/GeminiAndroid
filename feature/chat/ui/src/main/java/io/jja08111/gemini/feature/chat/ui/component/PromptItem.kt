@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
@@ -26,6 +27,7 @@ import io.jja08111.gemini.model.PromptImage
 
 internal val PromptItemHorizontalMargin = 40.dp
 private val CornerSize = CornerSize(2.dp)
+private val FixedImageHeightDp = 180.dp
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -41,9 +43,12 @@ internal fun PromptItem(
     if (images.isNotEmpty()) {
       // TODO: Implement multiple image view
       val image = images.first()
+      val imageWidthDp = image.width * (FixedImageHeightDp / image.height)
+
       GlideImage(
         modifier = Modifier
-          .heightIn(min = 100.dp, max = 180.dp)
+          // Make size modifier to show placeholder same size as image
+          .size(height = FixedImageHeightDp, width = imageWidthDp)
           .clip(MaterialTheme.shapes.medium.copy(bottomEnd = CornerSize))
           .align(Alignment.End),
         contentScale = ContentScale.Fit,
