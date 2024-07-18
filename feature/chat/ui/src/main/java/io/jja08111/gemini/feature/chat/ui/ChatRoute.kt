@@ -1,7 +1,9 @@
 package io.jja08111.gemini.feature.chat.ui
 
 import android.net.Uri
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.SnackbarHostState
@@ -24,13 +26,10 @@ fun ChatRoute(
   val context = LocalContext.current
   val snackbarHostState = remember { SnackbarHostState() }
 
-  val launcher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.GetContent(),
-  ) { uri: Uri? ->
-    if (uri != null) {
-      viewModel.attachImage(uri)
-    }
-  }
+  val imagePickerLauncher = rememberImagePickerLauncher(
+    maxItems = uiState.remainingImageCount,
+    onPickImages = viewModel::attachImages,
+  )
 
   viewModel.collectSideEffect {
     when (it) {
@@ -44,11 +43,35 @@ fun ChatRoute(
     listState = listState,
     onBackClick = popBackStack,
     onInputUpdate = viewModel::updateInputMessage,
-    onAlbumClick = { launcher.launch("image/*") },
+    onAlbumClick = {
+      imagePickerLauncher.launch(
+        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+      )
+    },
     onSendClick = viewModel::sendMessage,
     onRegenerateOnErrorClick = viewModel::regenerateOnError,
     onSelectResponseClick = navigateToSelectResponse,
     onRegenerateResponseClick = viewModel::regenerateResponse,
     onRemoveImageClick = viewModel::removeAttachedImage,
   )
+}
+
+@Composable
+private fun rememberImagePickerLauncher(
+  maxItems: Int,
+  onPickImages: (uris: List<Uri>) -> Unit,
+): ManagedActivityResultLauncher<PickVisualMediaRequest, out Any?> {
+  return if (maxItems > 1) {
+    rememberLauncherForActivityResult(
+      contract = ActivityResultContracts.PickMultipleVisualMedia(
+        maxItems = maxItems,
+      ),
+      onResult = onPickImages,
+    )
+  } else {
+    rememberLauncherForActivityResult(
+      contract = ActivityResultContracts.PickVisualMedia(),
+      onResult = { uri -> uri?.let { onPickImages(listOf(it)) } },
+    )
+  }
 }

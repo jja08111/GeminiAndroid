@@ -8,4 +8,7 @@ data class ChatUiState(
   val messageGroupStream: Flow<List<MessageGroup>>,
   val inputMessage: String = "",
   val attachedImageUris: List<Uri> = emptyList(),
-)
+) {
+  val remainingImageCount: Int
+    get() = MAX_IMAGE_COUNT - attachedImageUris.size
+}

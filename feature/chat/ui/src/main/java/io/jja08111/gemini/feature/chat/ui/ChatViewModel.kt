@@ -23,7 +23,7 @@ import org.orbitmvi.orbit.syntax.simple.reduce
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
 
-val MAX_IMAGE_COUNT = 3
+const val MAX_IMAGE_COUNT = 3
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -51,12 +51,12 @@ class ChatViewModel @Inject constructor(
     }
   }
 
-  fun attachImage(imageUri: Uri) {
+  fun attachImages(imageUris: List<Uri>) {
     intent {
-      if (state.attachedImageUris.contains(imageUri)) {
-        return@intent
-      }
-      reduce { state.copy(attachedImageUris = state.attachedImageUris + imageUri) }
+      val filteredImages = imageUris.filterNot { state.attachedImageUris.contains(it) }
+      val newUris = state.attachedImageUris + filteredImages
+      assert(newUris.size <= MAX_IMAGE_COUNT)
+      reduce { state.copy(attachedImageUris = newUris) }
     }
   }
 
