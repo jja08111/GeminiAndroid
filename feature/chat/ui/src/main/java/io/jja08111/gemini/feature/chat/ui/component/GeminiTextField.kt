@@ -3,6 +3,7 @@ package io.jja08111.gemini.feature.chat.ui.component
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -46,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import io.jja08111.gemini.core.ui.CrossFade
+import io.jja08111.gemini.feature.chat.ui.MAX_IMAGE_COUNT
 import io.jja08111.gemini.feature.chat.ui.R
 
 internal enum class TrailingButtonState {
@@ -59,14 +63,14 @@ internal fun GeminiTextField(
   modifier: Modifier = Modifier,
   text: String,
   onTextChange: (String) -> Unit,
-  imageUri: Uri?,
+  imageUris: List<Uri>,
   trailingButtonState: TrailingButtonState,
   leadingExpanded: Boolean = true,
   onExpandChange: (Boolean) -> Unit,
-  onSendClick: (String, Uri?) -> Unit,
+  onSendClick: (String, List<Uri>) -> Unit,
   onCameraClick: () -> Unit,
   onAlbumClick: () -> Unit,
-  onRemoveImageClick: () -> Unit,
+  onRemoveImageClick: (Uri) -> Unit,
 ) {
   val interactionSource = remember { MutableInteractionSource() }
   val labelColor = MaterialTheme.colorScheme.onBackground
@@ -97,7 +101,7 @@ internal fun GeminiTextField(
         .clip(MaterialTheme.shapes.extraLarge)
         .background(color = containerColor),
     ) {
-      if (imageUri == null) {
+      if (imageUris.size < MAX_IMAGE_COUNT) {
         LeadingButton(
           modifier = Modifier.align(Alignment.CenterVertically),
           expanded = leadingExpanded,
@@ -114,9 +118,9 @@ internal fun GeminiTextField(
           .padding(horizontal = 4.dp, vertical = 16.dp)
           .weight(1f),
       ) {
-        if (imageUri != null) {
-          AttachedImage(
-            uri = imageUri,
+        if (imageUris.isNotEmpty()) {
+          AttachedImageList(
+            uris = imageUris,
             onRemoveClick = onRemoveImageClick,
           )
           Spacer(modifier = Modifier.height(16.dp))
@@ -137,7 +141,7 @@ internal fun GeminiTextField(
             // No content
           }
 
-          TrailingButtonState.Send -> SendButton(onClick = { onSendClick(text, imageUri) })
+          TrailingButtonState.Send -> SendButton(onClick = { onSendClick(text, imageUris) })
 
           TrailingButtonState.Stop -> {
             // TODO: 정지 버튼으로 바꾸기
@@ -149,9 +153,25 @@ internal fun GeminiTextField(
   }
 }
 
+@Composable
+private fun AttachedImageList(
+  modifier: Modifier = Modifier,
+  uris: List<Uri>,
+  onRemoveClick: (Uri) -> Unit,
+) {
+  Row(modifier = modifier.horizontalScroll(rememberScrollState())) {
+    uris.forEachIndexed { index, uri ->
+      AttachedImage(uri = uri, onRemoveClick = onRemoveClick)
+      if (index != uris.lastIndex) {
+        Spacer(modifier = Modifier.width(4.dp))
+      }
+    }
+  }
+}
+
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-private fun AttachedImage(uri: Uri, onRemoveClick: () -> Unit) {
+private fun AttachedImage(uri: Uri, onRemoveClick: (Uri) -> Unit) {
   Box {
     GlideImage(
       modifier = Modifier
@@ -164,7 +184,7 @@ private fun AttachedImage(uri: Uri, onRemoveClick: () -> Unit) {
     Icon(
       modifier = Modifier
         .align(Alignment.TopEnd)
-        .clickable(onClick = onRemoveClick, role = Role.Button)
+        .clickable(onClick = { onRemoveClick(uri) }, role = Role.Button)
         .padding(4.dp),
       tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
       imageVector = Icons.Filled.RemoveCircle,
@@ -272,7 +292,7 @@ private fun EmptyGeminiTextFieldPreview() {
     GeminiTextField(
       text = "",
       onTextChange = {},
-      imageUri = null,
+      imageUris = emptyList(),
       leadingExpanded = false,
       trailingButtonState = TrailingButtonState.Send,
       onCameraClick = {},
@@ -291,7 +311,7 @@ private fun GeminiTextFieldPreview() {
     GeminiTextField(
       text = "Text",
       onTextChange = {},
-      imageUri = null,
+      imageUris = emptyList(),
       leadingExpanded = true,
       trailingButtonState = TrailingButtonState.Send,
       onCameraClick = {},

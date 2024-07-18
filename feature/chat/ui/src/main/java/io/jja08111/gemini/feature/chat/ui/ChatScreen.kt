@@ -70,8 +70,8 @@ internal fun ChatScreen(
   onBackClick: () -> Unit,
   onInputUpdate: (prompt: String) -> Unit,
   onAlbumClick: () -> Unit,
-  onRemoveImageClick: () -> Unit,
-  onSendClick: (prompt: String, imageUri: Uri?) -> Unit,
+  onRemoveImageClick: (Uri) -> Unit,
+  onSendClick: (prompt: String, imageUris: List<Uri>) -> Unit,
   onRegenerateOnErrorClick: () -> Unit,
   onSelectResponseClick: (promptId: String) -> Unit,
   // TODO: Change String type to value class
@@ -181,7 +181,7 @@ internal fun ChatScreen(
           .fillMaxWidth()
           .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
         text = uiState.inputMessage,
-        imageUri = uiState.attachedImageUri,
+        imageUris = uiState.attachedImageUris,
         leadingExpanded = leadingExpanded,
         trailingButtonState = if (isGenerating) {
           TrailingButtonState.Stop
@@ -190,8 +190,8 @@ internal fun ChatScreen(
         } else {
           TrailingButtonState.Empty
         },
-        onSendClick = { prompt, imageUri ->
-          onSendClick(prompt, imageUri)
+        onSendClick = { prompt, imageUris ->
+          onSendClick(prompt, imageUris)
           keyboardController?.hide()
         },
         onTextChange = onInputUpdate,

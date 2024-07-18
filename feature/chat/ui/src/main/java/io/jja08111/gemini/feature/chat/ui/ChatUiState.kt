@@ -7,5 +7,5 @@ import kotlinx.coroutines.flow.Flow
 data class ChatUiState(
   val messageGroupStream: Flow<List<MessageGroup>>,
   val inputMessage: String = "",
-  val attachedImageUri: Uri? = null,
+  val attachedImageUris: List<Uri> = emptyList(),
 )

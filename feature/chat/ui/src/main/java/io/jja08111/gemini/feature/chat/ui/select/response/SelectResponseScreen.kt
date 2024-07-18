@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.jja08111.gemini.feature.chat.ui.component.ExpandableModelResponseItem
 import io.jja08111.gemini.feature.chat.ui.component.PromptItem
-import io.jja08111.gemini.feature.chat.ui.component.PromptItemHorizontalMargin
 import io.jja08111.gemini.model.ModelResponseState
 
 @Composable
@@ -62,7 +61,6 @@ internal fun SelectResponseScreen(
             PromptItem(
               modifier = Modifier
                 .padding(all = 16.dp)
-                .padding(start = PromptItemHorizontalMargin)
                 .align(Alignment.CenterEnd),
               text = prompt.text,
               images = prompt.images,

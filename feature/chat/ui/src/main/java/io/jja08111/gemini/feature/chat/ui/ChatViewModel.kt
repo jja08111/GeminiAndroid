@@ -23,6 +23,8 @@ import org.orbitmvi.orbit.syntax.simple.reduce
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
 
+val MAX_IMAGE_COUNT = 3
+
 @HiltViewModel
 class ChatViewModel @Inject constructor(
   savedStateHandle: SavedStateHandle,
@@ -51,25 +53,31 @@ class ChatViewModel @Inject constructor(
 
   fun attachImage(imageUri: Uri) {
     intent {
-      reduce { state.copy(attachedImageUri = imageUri) }
+      if (state.attachedImageUris.contains(imageUri)) {
+        return@intent
+      }
+      reduce { state.copy(attachedImageUris = state.attachedImageUris + imageUri) }
     }
   }
 
-  fun removeAttachedImage() {
+  fun removeAttachedImage(uri: Uri) {
     intent {
-      reduce { state.copy(attachedImageUri = null) }
+      reduce {
+        state.copy(
+          attachedImageUris = state.attachedImageUris.filterNot { it == uri },
+        )
+      }
     }
   }
 
-  fun sendMessage(message: String, imageUri: Uri?) {
+  fun sendMessage(message: String, imageUris: List<Uri>) {
     intent {
-      reduce { state.copy(inputMessage = "", attachedImageUri = null) }
+      reduce { state.copy(inputMessage = "", attachedImageUris = emptyList()) }
     }
     viewModelScope.launch {
       chatRepository.sendMessage(
         message = message,
-        // TODO: Implement multiple image selection UI
-        imageUris = if (imageUri != null) listOf(imageUri) else emptyList(),
+        imageUris = imageUris,
         onRoomCreated = { stream ->
           intent { reduce { state.copy(messageGroupStream = stream) } }
         },

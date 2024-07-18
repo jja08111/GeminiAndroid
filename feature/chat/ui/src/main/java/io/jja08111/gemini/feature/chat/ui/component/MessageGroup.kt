@@ -26,7 +26,6 @@ internal fun MessageGroup(
     PromptItem(
       modifier = Modifier
         .padding(all = 16.dp)
-        .padding(start = PromptItemHorizontalMargin)
         .align(alignment = Alignment.End),
       text = prompt.text,
       images = prompt.images,
