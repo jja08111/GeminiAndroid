@@ -28,6 +28,8 @@ googleGenerativeAi = "0.9.0"
 composeMarkdown = "0.5.0"
 androidDesugarJdkLibs = "2.0.4"
 glideCompose = "1.0.0-beta01"
+kotlinCoroutineTest = "1.6.4"
+robolectric = "4.13"
 
 # Wearables
 playServicesWearable = "18.1.0"
@@ -68,6 +70,8 @@ android-desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_li
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 glide-compose = { group = "com.github.bumptech.glide", name = "compose", version.ref = "glideCompose" }
+kotlin-coroutine-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinCoroutineTest" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 # Wearables
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "playServicesWearable" }

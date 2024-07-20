@@ -16,6 +16,7 @@ dependencies {
   implementation(project(":core:model"))
   implementation(project(":core:ui"))
   implementation(project(":feature:chat:data"))
+  testImplementation(project(":core:testing"))
 
   implementation(libs.androidx.activity.compose)
   implementation(platform(libs.androidx.compose.bom))
@@ -43,6 +44,7 @@ dependencies {
   implementation(libs.androidx.appcompat)
   implementation(libs.material)
   testImplementation(libs.junit)
+  testImplementation(libs.robolectric)
   androidTestImplementation(libs.androidx.test.ext.junit)
   androidTestImplementation(libs.espresso.core)
   debugImplementation(libs.androidx.compose.ui.tooling)
