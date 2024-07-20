@@ -1,5 +1,6 @@
 package io.jja08111.gemini.feature.chat.ui
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
@@ -10,10 +11,10 @@ import com.google.ai.client.generativeai.type.ServerException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jja08111.core.navigation.mobile.ChatMobileDestinations
 import io.jja08111.gemini.core.ui.Message
+import io.jja08111.gemini.feature.chat.data.model.AttachedImage
 import io.jja08111.gemini.feature.chat.data.repository.ChatRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.syntax.simple.blockingIntent
@@ -51,33 +52,42 @@ class ChatViewModel @Inject constructor(
     }
   }
 
-  fun attachImages(imageUris: List<Uri>) {
-    intent {
-      val filteredImages = imageUris.filterNot { state.attachedImageUris.contains(it) }
-      val newUris = state.attachedImageUris + filteredImages
-      assert(newUris.size <= MAX_IMAGE_COUNT)
-      reduce { state.copy(attachedImageUris = newUris) }
-    }
-  }
-
-  fun removeAttachedImage(uri: Uri) {
+  fun attachImage(image: Bitmap) {
     intent {
       reduce {
-        state.copy(
-          attachedImageUris = state.attachedImageUris.filterNot { it == uri },
-        )
+        state.copy(attachedImages = state.attachedImages + AttachedImage.Bitmap(image))
       }
     }
   }
 
-  fun sendMessage(message: String, imageUris: List<Uri>) {
+  fun attachImages(imageUris: List<Uri>) {
     intent {
-      reduce { state.copy(inputMessage = "", attachedImageUris = emptyList()) }
+      val filteredImages = imageUris
+        .asSequence()
+        .map { AttachedImage.Uri(it) }
+        .filterNot { state.attachedImages.contains(it) }
+      val newUris = state.attachedImages + filteredImages
+      assert(newUris.size <= MAX_IMAGE_COUNT)
+      reduce { state.copy(attachedImages = newUris) }
     }
-    viewModelScope.launch {
+  }
+
+  fun removeAttachedImage(index: Int) {
+    intent {
+      reduce {
+        state.copy(attachedImages = state.attachedImages.filterIndexed { i, _ -> i != index })
+      }
+    }
+  }
+
+  fun sendMessage() {
+    intent {
+      val message = state.inputMessage
+      val images = state.attachedImages
+      reduce { state.copy(inputMessage = "", attachedImages = emptyList()) }
       chatRepository.sendMessage(
         message = message,
-        imageUris = imageUris,
+        images = images,
         onRoomCreated = { stream ->
           intent { reduce { state.copy(messageGroupStream = stream) } }
         },

@@ -5,6 +5,7 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -31,6 +32,11 @@ fun ChatRoute(
     onPickImages = viewModel::attachImages,
   )
 
+  val takePictureLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.TakePicturePreview(),
+    onResult = { bitmap -> bitmap?.let { viewModel.attachImage(it) } },
+  )
+
   viewModel.collectSideEffect {
     when (it) {
       is ChatSideEffect.UserMessage -> snackbarHostState.showSnackbar(it.message.asString(context))
@@ -43,6 +49,7 @@ fun ChatRoute(
     listState = listState,
     onBackClick = popBackStack,
     onInputUpdate = viewModel::updateInputMessage,
+    onCameraClick = takePictureLauncher::launch,
     onAlbumClick = {
       imagePickerLauncher.launch(
         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),

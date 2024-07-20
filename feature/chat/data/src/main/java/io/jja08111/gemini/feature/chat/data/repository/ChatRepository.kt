@@ -1,6 +1,6 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
-import android.net.Uri
+import io.jja08111.gemini.feature.chat.data.model.AttachedImage
 import io.jja08111.gemini.model.MessageGroup
 import kotlinx.coroutines.flow.Flow
 
@@ -9,7 +9,7 @@ interface ChatRepository {
 
   suspend fun sendMessage(
     message: String,
-    imageUris: List<Uri>,
+    images: List<AttachedImage>,
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit>
 

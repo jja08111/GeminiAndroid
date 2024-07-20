@@ -1,7 +1,6 @@
 package io.jja08111.gemini.feature.chat.data.repository
 
 import android.graphics.Bitmap
-import android.net.Uri
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
@@ -12,6 +11,7 @@ import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
 import io.jja08111.gemini.feature.chat.data.extension.toContents
 import io.jja08111.gemini.feature.chat.data.extension.toResponseContentPartials
+import io.jja08111.gemini.feature.chat.data.model.AttachedImage
 import io.jja08111.gemini.feature.chat.data.model.CANDIDATE_COUNT
 import io.jja08111.gemini.feature.chat.data.model.MODEL_NAME
 import io.jja08111.gemini.feature.chat.data.model.ROLE_USER
@@ -70,7 +70,7 @@ class GenerativeChatRepository @Inject constructor(
 
   override suspend fun sendMessage(
     message: String,
-    imageUris: List<Uri>,
+    images: List<AttachedImage>,
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit> {
     val roomId = joinedRoomId ?: throwNotJoinedError()
@@ -82,7 +82,7 @@ class GenerativeChatRepository @Inject constructor(
     if (isNewChat) {
       val title = when {
         message.isNotEmpty() -> message
-        imageUris.isNotEmpty() -> "Image question"
+        images.isNotEmpty() -> "Image question"
         else -> error("Message is empty with null image")
       }
       chatLocalDataSource.insertRoom(roomId = roomId, title = title)
@@ -92,11 +92,16 @@ class GenerativeChatRepository @Inject constructor(
     val promptId = createId()
     val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
     val parentModelResponseId = messageGroups.lastOrNull()?.selectedResponse?.id
-    val images = imageUris.map { bitmapCreator.create(it) }
+    val imageBitmaps = images.map {
+      when (it) {
+        is AttachedImage.Bitmap -> it.bitmap
+        is AttachedImage.Uri -> bitmapCreator.create(it.uri)
+      }
+    }
 
     chatLocalDataSource.insertInitialMessageGroup(
       prompt = message,
-      imageBitmaps = images,
+      imageBitmaps = imageBitmaps,
       roomId = roomId,
       promptId = promptId,
       responseIds = responseTextBuilders.map { it.id },
@@ -105,7 +110,7 @@ class GenerativeChatRepository @Inject constructor(
 
     return model.generateTextMessageStream(
       message = message,
-      images = images,
+      images = imageBitmaps,
       history = messageGroups.flatMap(MessageGroup::toContents),
       promptId = promptId,
       responseTextBuilders = responseTextBuilders,

@@ -1,6 +1,5 @@
 package io.jja08111.gemini.feature.chat.ui
 
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -69,9 +68,10 @@ internal fun ChatScreen(
   listState: LazyListState = rememberLazyListState(),
   onBackClick: () -> Unit,
   onInputUpdate: (prompt: String) -> Unit,
+  onCameraClick: () -> Unit,
   onAlbumClick: () -> Unit,
-  onRemoveImageClick: (Uri) -> Unit,
-  onSendClick: (prompt: String, imageUris: List<Uri>) -> Unit,
+  onRemoveImageClick: (index: Int) -> Unit,
+  onSendClick: () -> Unit,
   onRegenerateOnErrorClick: () -> Unit,
   onSelectResponseClick: (promptId: String) -> Unit,
   // TODO: Change String type to value class
@@ -181,7 +181,7 @@ internal fun ChatScreen(
           .fillMaxWidth()
           .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
         text = uiState.inputMessage,
-        imageUris = uiState.attachedImageUris,
+        images = uiState.attachedImages,
         leadingExpanded = leadingExpanded,
         trailingButtonState = if (isGenerating) {
           TrailingButtonState.Stop
@@ -190,12 +190,12 @@ internal fun ChatScreen(
         } else {
           TrailingButtonState.Empty
         },
-        onSendClick = { prompt, imageUris ->
-          onSendClick(prompt, imageUris)
+        onSendClick = {
+          onSendClick()
           keyboardController?.hide()
         },
         onTextChange = onInputUpdate,
-        onCameraClick = {},
+        onCameraClick = onCameraClick,
         onAlbumClick = onAlbumClick,
         onExpandChange = { leadingExpanded = it },
         onRemoveImageClick = onRemoveImageClick,
