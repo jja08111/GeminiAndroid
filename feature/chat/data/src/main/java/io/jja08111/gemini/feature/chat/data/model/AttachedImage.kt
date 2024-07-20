@@ -24,4 +24,14 @@ sealed class AttachedImage {
       is Bitmap -> this.bitmap.hashCode()
     }
   }
+
+  companion object {
+    fun create(uri: android.net.Uri): AttachedImage {
+      return Uri(uri)
+    }
+
+    fun create(bitmap: android.graphics.Bitmap): AttachedImage {
+      return Bitmap(bitmap)
+    }
+  }
 }

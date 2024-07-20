@@ -55,7 +55,7 @@ class ChatViewModel @Inject constructor(
   fun attachImage(image: Bitmap) {
     intent {
       reduce {
-        state.copy(attachedImages = state.attachedImages + AttachedImage.Bitmap(image))
+        state.copy(attachedImages = state.attachedImages + AttachedImage.create(image))
       }
     }
   }
@@ -64,7 +64,7 @@ class ChatViewModel @Inject constructor(
     intent {
       val filteredImages = imageUris
         .asSequence()
-        .map { AttachedImage.Uri(it) }
+        .map(AttachedImage::create)
         .filterNot { state.attachedImages.contains(it) }
       val newUris = state.attachedImages + filteredImages
       assert(newUris.size <= MAX_IMAGE_COUNT)
