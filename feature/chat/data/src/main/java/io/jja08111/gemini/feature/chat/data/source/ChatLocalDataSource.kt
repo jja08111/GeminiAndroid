@@ -16,6 +16,9 @@ import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.ModelResponse
 import io.jja08111.gemini.model.Prompt
 import io.jja08111.gemini.model.createId
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
@@ -57,11 +60,20 @@ class ChatLocalDataSource @Inject constructor(
     responseIds: List<String>,
   ) {
     val now = LocalDateTime.now()
-    val images = imageBitmaps.map { bitmap ->
+    val savedImagePathAndBitmaps = coroutineScope {
+      val deferred = imageBitmaps.map { bitmap ->
+        async {
+          val path = promptImageLocalDataSource.saveImage(bitmap)
+          path to bitmap
+        }
+      }
+      return@coroutineScope deferred.awaitAll()
+    }
+    val images = savedImagePathAndBitmaps.map { (path: String, bitmap: Bitmap) ->
       PromptImageEntity(
         id = createId(),
         promptId = promptId,
-        path = promptImageLocalDataSource.saveImage(bitmap),
+        path = path,
         width = bitmap.width,
         height = bitmap.height,
       )
