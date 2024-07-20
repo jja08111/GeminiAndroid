@@ -108,4 +108,34 @@ class ChatViewModelTest {
         }
       }
     }
+
+  @Test
+  fun `should clear message and images when send message`() =
+    runTest {
+      ChatViewModel(
+        savedStateHandle = defaultSavedStateHandle,
+        chatRepository = FakeChatRepository(),
+      ).test(
+        this,
+        initialState = ChatUiState(
+          messageGroupStream = emptyFlow(),
+          inputMessage = "input message",
+          attachedImages = listOf(
+            AttachedImage.create(Uri.parse("1")),
+            AttachedImage.create(Uri.parse("2")),
+          ),
+        ),
+      ) {
+        // given
+        expectInitialState()
+        runOnCreate()
+
+        // when
+        containerHost.sendMessage()
+
+        // then
+        expectState { copy(inputMessage = "", attachedImages = emptyList()) }
+        cancelAndIgnoreRemainingItems()
+      }
+    }
 }
