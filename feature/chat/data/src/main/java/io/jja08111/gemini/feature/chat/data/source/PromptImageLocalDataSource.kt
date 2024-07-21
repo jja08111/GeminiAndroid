@@ -20,7 +20,6 @@ class PromptImageLocalDataSource @Inject constructor(
     return "prompt_${createId()}.jpg"
   }
 
-  // TODO: Error handling
   suspend fun saveImage(bitmap: Bitmap): String =
     withContext(Dispatchers.IO) {
       val filename = createFileName()
@@ -31,7 +30,6 @@ class PromptImageLocalDataSource @Inject constructor(
       return@withContext file.absolutePath
     }
 
-  // TODO: Error handling
   suspend fun loadImage(imagePath: String): Bitmap =
     withContext(Dispatchers.IO) {
       return@withContext BitmapFactory.decodeFile(imagePath)

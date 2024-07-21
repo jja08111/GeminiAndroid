@@ -11,6 +11,8 @@ import io.jja08111.gemini.database.entity.RoomEntity
 import io.jja08111.gemini.database.entity.partial.ModelResponseContentPartial
 import io.jja08111.gemini.database.entity.relation.PromptWithImages
 import io.jja08111.gemini.database.extension.toDomain
+import io.jja08111.gemini.feature.chat.data.exception.MessageInsertionException
+import io.jja08111.gemini.feature.chat.data.exception.RoomInsertionException
 import io.jja08111.gemini.feature.chat.data.extension.convertToMessageGroups
 import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.ModelResponse
@@ -79,31 +81,39 @@ class ChatLocalDataSource @Inject constructor(
       )
     }
 
-    messageDao.insert(
-      prompt = PromptEntity(
-        id = promptId,
-        roomId = roomId,
-        parentModelResponseId = parentModelResponseId,
-        text = prompt,
-        createdAt = now,
-      ),
-      images = images,
-      modelResponses = responseIds.mapIndexed { index, id ->
-        ModelResponseEntity(
-          id = id,
+    try {
+      messageDao.insert(
+        prompt = PromptEntity(
+          id = promptId,
           roomId = roomId,
-          parentPromptId = promptId,
-          text = "",
+          parentModelResponseId = parentModelResponseId,
+          text = prompt,
           createdAt = now,
-          state = ModelResponseStateEntity.Generating,
-          selected = index == 0,
-        )
-      },
-    )
+        ),
+        images = images,
+        modelResponses = responseIds.mapIndexed { index, id ->
+          ModelResponseEntity(
+            id = id,
+            roomId = roomId,
+            parentPromptId = promptId,
+            text = "",
+            createdAt = now,
+            state = ModelResponseStateEntity.Generating,
+            selected = index == 0,
+          )
+        },
+      )
+    } catch (e: Exception) {
+      throw MessageInsertionException(cause = e)
+    }
   }
 
   suspend fun insertRoom(roomId: String, title: String) {
-    roomDao.insert(RoomEntity(id = roomId, createdAt = LocalDateTime.now(), title = title))
+    try {
+      roomDao.insert(RoomEntity(id = roomId, createdAt = LocalDateTime.now(), title = title))
+    } catch (e: Exception) {
+      throw RoomInsertionException(cause = e)
+    }
   }
 
   suspend fun insertResponsesAndRemoveError(
@@ -112,18 +122,22 @@ class ChatLocalDataSource @Inject constructor(
     roomId: String,
     promptId: String,
   ) {
-    val responses = newResponseIds.mapIndexed { index, id ->
-      ModelResponseEntity(
-        id = id,
-        roomId = roomId,
-        parentPromptId = promptId,
-        text = "",
-        createdAt = LocalDateTime.now(),
-        state = ModelResponseStateEntity.Generating,
-        selected = index == 0,
-      )
+    try {
+      val responses = newResponseIds.mapIndexed { index, id ->
+        ModelResponseEntity(
+          id = id,
+          roomId = roomId,
+          parentPromptId = promptId,
+          text = "",
+          createdAt = LocalDateTime.now(),
+          state = ModelResponseStateEntity.Generating,
+          selected = index == 0,
+        )
+      }
+      messageDao.insertAndRemove(modelResponses = responses, responseIdToRemove = errorResponseId)
+    } catch (e: Exception) {
+      throw MessageInsertionException(cause = e)
     }
-    messageDao.insertAndRemove(modelResponses = responses, responseIdToRemove = errorResponseId)
   }
 
   suspend fun insertAndUnselectOldResponses(
@@ -131,18 +145,22 @@ class ChatLocalDataSource @Inject constructor(
     roomId: String,
     promptId: String,
   ) {
-    val responses = newResponseIds.mapIndexed { index, id ->
-      ModelResponseEntity(
-        id = id,
-        roomId = roomId,
-        parentPromptId = promptId,
-        text = "",
-        createdAt = LocalDateTime.now(),
-        state = ModelResponseStateEntity.Generating,
-        selected = index == 0,
-      )
+    try {
+      val responses = newResponseIds.mapIndexed { index, id ->
+        ModelResponseEntity(
+          id = id,
+          roomId = roomId,
+          parentPromptId = promptId,
+          text = "",
+          createdAt = LocalDateTime.now(),
+          state = ModelResponseStateEntity.Generating,
+          selected = index == 0,
+        )
+      }
+      messageDao.insertAndUnselectOldResponses(modelResponses = responses)
+    } catch (e: Exception) {
+      throw MessageInsertionException(cause = e)
     }
-    messageDao.insertAndUnselectOldResponses(modelResponses = responses)
   }
 
   fun getPromptBy(promptId: String): Flow<Prompt> {

@@ -11,9 +11,12 @@ import com.google.ai.client.generativeai.type.ServerException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jja08111.core.navigation.mobile.ChatMobileDestinations
 import io.jja08111.gemini.core.ui.Message
+import io.jja08111.gemini.feature.chat.data.exception.MessageInsertionException
+import io.jja08111.gemini.feature.chat.data.exception.RoomInsertionException
 import io.jja08111.gemini.feature.chat.data.model.AttachedImage
 import io.jja08111.gemini.feature.chat.data.repository.ChatRepository
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.stateIn
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
@@ -37,11 +40,23 @@ class ChatViewModel @Inject constructor(
 
   override val container = container<ChatUiState, ChatSideEffect>(
     ChatUiState(
-      messageGroupStream = chatRepository.join(roomId).stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyList(),
-      ),
+      messageGroupStream = chatRepository
+        .join(roomId)
+        .catch {
+          intent {
+            reduce { state.copy(failedToJoinRoom = true) }
+            postSideEffect(
+              ChatSideEffect.UserMessage(
+                Message.Resource(R.string.feature_chat_ui_failed_to_join_chat_room),
+              ),
+            )
+          }
+        }
+        .stateIn(
+          scope = viewModelScope,
+          started = SharingStarted.WhileSubscribed(5_000),
+          initialValue = emptyList(),
+        ),
     ),
   )
 
@@ -112,29 +127,26 @@ class ChatViewModel @Inject constructor(
   private fun handleChatException(throwable: Throwable) {
     Log.e(TAG, "Error caused when generating response. $throwable")
     intent {
-      when (throwable) {
-        is ResponseStoppedException -> postSideEffect(
-          ChatSideEffect.UserMessage(
-            // TODO: 에러 메시지 finishReason으로 디테일하게 바꾸기
-            message = Message.Resource(
-              R.string.feature_chat_ui_response_stopped_message,
-              throwable.response.candidates.first().finishReason?.name ?: "",
-            ),
-          ),
+      val message = when (throwable) {
+        is RoomInsertionException -> Message.Resource(
+          R.string.feature_chat_ui_failed_to_join_chat_room,
         )
 
-        is ServerException -> postSideEffect(
-          ChatSideEffect.UserMessage(
-            Message.Resource(R.string.feature_chat_ui_server_error_message),
-          ),
+        is MessageInsertionException -> Message.Resource(
+          R.string.feature_chat_ui_failed_to_insert_message,
         )
 
-        else -> postSideEffect(
-          ChatSideEffect.UserMessage(
-            Message.Resource(R.string.feature_chat_ui_unknown_error_message),
-          ),
+        // TODO: 에러 메시지 finishReason으로 디테일하게 바꾸기
+        is ResponseStoppedException -> Message.Resource(
+          R.string.feature_chat_ui_response_stopped_message,
+          throwable.response.candidates.first().finishReason?.name ?: "",
         )
+
+        is ServerException -> Message.Resource(R.string.feature_chat_ui_server_error_message)
+
+        else -> Message.Resource(R.string.feature_chat_ui_unknown_error_message)
       }
+      postSideEffect(ChatSideEffect.UserMessage(message))
     }
   }
 

@@ -9,6 +9,9 @@ import io.github.jja08111.core.common.di.IoDispatcher
 import io.github.jja08111.core.common.image.BitmapCreator
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
+import io.jja08111.gemini.feature.chat.data.exception.EmptyContentException
+import io.jja08111.gemini.feature.chat.data.exception.EmptyMessageGroupsOnRegenerationException
+import io.jja08111.gemini.feature.chat.data.exception.NotJoinedException
 import io.jja08111.gemini.feature.chat.data.extension.toContents
 import io.jja08111.gemini.feature.chat.data.extension.toResponseContentPartials
 import io.jja08111.gemini.feature.chat.data.model.AttachedImage
@@ -27,7 +30,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -61,11 +63,7 @@ class GenerativeChatRepository @Inject constructor(
         candidateCount = CANDIDATE_COUNT
       },
     )
-    return try {
-      chatLocalDataSource.getMessageGroupStream(roomId)
-    } catch (e: Exception) {
-      flowOf(emptyList())
-    }
+    return chatLocalDataSource.getMessageGroupStream(roomId)
   }
 
   override suspend fun sendMessage(
@@ -73,104 +71,110 @@ class GenerativeChatRepository @Inject constructor(
     images: List<AttachedImage>,
     onRoomCreated: (Flow<List<MessageGroup>>) -> Unit,
   ): Result<Unit> {
-    val roomId = joinedRoomId ?: throwNotJoinedError()
-    val model = generativeModel ?: throwNotJoinedError()
-    val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
-    val messageGroups = messageGroupStream.first()
-    val isNewChat = messageGroups.isEmpty()
+    return runCatching {
+      val roomId = joinedRoomId ?: throw NotJoinedException()
+      val model = generativeModel ?: throw NotJoinedException()
+      val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
+      val messageGroups = messageGroupStream.first()
+      val isNewChat = messageGroups.isEmpty()
 
-    if (isNewChat) {
-      val title = when {
-        message.isNotEmpty() -> message
-        images.isNotEmpty() -> "Image question"
-        else -> error("Message is empty with null image")
+      if (isNewChat) {
+        val title = when {
+          message.isNotEmpty() -> message
+          images.isNotEmpty() -> "Image question"
+          else -> throw EmptyContentException()
+        }
+        chatLocalDataSource.insertRoom(roomId = roomId, title = title)
+        onRoomCreated(messageGroupStream)
       }
-      chatLocalDataSource.insertRoom(roomId = roomId, title = title)
-      onRoomCreated(messageGroupStream)
-    }
 
-    val promptId = createId()
-    val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
-    val parentModelResponseId = messageGroups.lastOrNull()?.selectedResponse?.id
-    val imageBitmaps = images.map {
-      when (it) {
-        is AttachedImage.Bitmap -> it.bitmap
-        is AttachedImage.Uri -> bitmapCreator.create(it.uri)
+      val promptId = createId()
+      val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
+      val parentModelResponseId = messageGroups.lastOrNull()?.selectedResponse?.id
+      val imageBitmaps = images.map {
+        when (it) {
+          is AttachedImage.Bitmap -> it.bitmap
+          is AttachedImage.Uri -> bitmapCreator.create(it.uri)
+        }
       }
+
+      chatLocalDataSource.insertInitialMessageGroup(
+        prompt = message,
+        imageBitmaps = imageBitmaps,
+        roomId = roomId,
+        promptId = promptId,
+        responseIds = responseTextBuilders.map { it.id },
+        parentModelResponseId = parentModelResponseId,
+      )
+
+      return model.generateTextMessageStream(
+        message = message,
+        images = imageBitmaps,
+        history = messageGroups.flatMap(MessageGroup::toContents),
+        promptId = promptId,
+        responseTextBuilders = responseTextBuilders,
+      )
     }
-
-    chatLocalDataSource.insertInitialMessageGroup(
-      prompt = message,
-      imageBitmaps = imageBitmaps,
-      roomId = roomId,
-      promptId = promptId,
-      responseIds = responseTextBuilders.map { it.id },
-      parentModelResponseId = parentModelResponseId,
-    )
-
-    return model.generateTextMessageStream(
-      message = message,
-      images = imageBitmaps,
-      history = messageGroups.flatMap(MessageGroup::toContents),
-      promptId = promptId,
-      responseTextBuilders = responseTextBuilders,
-    )
   }
 
   override suspend fun regenerateOnError(): Result<Unit> {
-    val model = generativeModel ?: throwNotJoinedError()
-    val roomId = joinedRoomId ?: throwNotJoinedError()
-    val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
-    val messageGroups = messageGroupStream.first()
-    val lastMessageGroup =
-      messageGroups.lastOrNull() ?: error("Message group list is empty when regenerating response")
-    val lastPrompt = lastMessageGroup.prompt
-    val lastPromptId = lastPrompt.id
-    val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
+    return runCatching {
+      val model = generativeModel ?: throw NotJoinedException()
+      val roomId = joinedRoomId ?: throw NotJoinedException()
+      val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
+      val messageGroups = messageGroupStream.first()
+      val lastMessageGroup =
+        messageGroups.lastOrNull() ?: throw EmptyMessageGroupsOnRegenerationException()
+      val lastPrompt = lastMessageGroup.prompt
+      val lastPromptId = lastPrompt.id
+      val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
 
-    chatLocalDataSource.insertResponsesAndRemoveError(
-      newResponseIds = responseTextBuilders.map { it.id },
-      errorResponseId = lastMessageGroup.selectedResponse.id,
-      roomId = roomId,
-      promptId = lastPromptId,
-    )
+      chatLocalDataSource.insertResponsesAndRemoveError(
+        newResponseIds = responseTextBuilders.map { it.id },
+        errorResponseId = lastMessageGroup.selectedResponse.id,
+        roomId = roomId,
+        promptId = lastPromptId,
+      )
 
-    return model.generateTextMessageStream(
-      message = lastPrompt.text,
-      images = lastPrompt.images.map { promptImageLocalDataSource.loadImage(it.path) },
-      history = messageGroups
-        .dropLast(1)
-        .flatMap(MessageGroup::toContents),
-      promptId = lastPromptId,
-      responseTextBuilders = responseTextBuilders,
-    )
+      return model.generateTextMessageStream(
+        message = lastPrompt.text,
+        images = lastPrompt.images.map { promptImageLocalDataSource.loadImage(it.path) },
+        history = messageGroups
+          .dropLast(1)
+          .flatMap(MessageGroup::toContents),
+        promptId = lastPromptId,
+        responseTextBuilders = responseTextBuilders,
+      )
+    }
   }
 
   override suspend fun regenerateResponse(responseId: String): Result<Unit> {
-    val model = generativeModel ?: throwNotJoinedError()
-    val roomId = joinedRoomId ?: throwNotJoinedError()
-    val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
-    val messageGroups = messageGroupStream.first()
-    val messageGroup = messageGroups.firstOrNull {
-      it.selectedResponse.id == responseId
-    } ?: error("Message group list is empty when regenerating response")
-    val prompt = messageGroup.prompt
-    val promptId = prompt.id
-    val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
+    return runCatching {
+      val model = generativeModel ?: throw NotJoinedException()
+      val roomId = joinedRoomId ?: throw NotJoinedException()
+      val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
+      val messageGroups = messageGroupStream.first()
+      val messageGroup = messageGroups.firstOrNull {
+        it.selectedResponse.id == responseId
+      } ?: throw EmptyMessageGroupsOnRegenerationException()
+      val prompt = messageGroup.prompt
+      val promptId = prompt.id
+      val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
 
-    chatLocalDataSource.insertAndUnselectOldResponses(
-      newResponseIds = responseTextBuilders.map { it.id },
-      roomId = roomId,
-      promptId = promptId,
-    )
+      chatLocalDataSource.insertAndUnselectOldResponses(
+        newResponseIds = responseTextBuilders.map { it.id },
+        roomId = roomId,
+        promptId = promptId,
+      )
 
-    return model.generateTextMessageStream(
-      message = prompt.text,
-      images = prompt.images.map { promptImageLocalDataSource.loadImage(it.path) },
-      history = messageGroups.flatMap(MessageGroup::toContents),
-      promptId = promptId,
-      responseTextBuilders = responseTextBuilders,
-    )
+      return model.generateTextMessageStream(
+        message = prompt.text,
+        images = prompt.images.map { promptImageLocalDataSource.loadImage(it.path) },
+        history = messageGroups.flatMap(MessageGroup::toContents),
+        promptId = promptId,
+        responseTextBuilders = responseTextBuilders,
+      )
+    }
   }
 
   private suspend fun GenerativeModel.generateTextMessageStream(
@@ -209,10 +213,6 @@ class GenerativeChatRepository @Inject constructor(
           .collect()
       }
     }
-  }
-
-  private fun throwNotJoinedError(): Nothing {
-    error("Must call join function before usage")
   }
 
   override fun exit() {

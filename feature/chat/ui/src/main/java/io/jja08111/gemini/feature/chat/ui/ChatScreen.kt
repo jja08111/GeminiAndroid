@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -168,11 +169,24 @@ internal fun ChatScreen(
       }
     }
 
-    if (hasLastResponseError) {
-      RegenerateButton(
+    if (uiState.failedToJoinRoom) {
+      BottomButton(
         modifier = Modifier
           .align(Alignment.CenterHorizontally)
           .padding(vertical = 8.dp),
+        label = "Retry to Join",
+        imageVector = Icons.Default.Refresh,
+        contentDescription = "Retry to join room",
+        onClick = { /* TODO: Implement here */ },
+      )
+    } else if (hasLastResponseError) {
+      BottomButton(
+        modifier = Modifier
+          .align(Alignment.CenterHorizontally)
+          .padding(vertical = 8.dp),
+        label = "Regenerate",
+        imageVector = Icons.Default.Refresh,
+        contentDescription = "Regenerate response",
         onClick = onRegenerateOnErrorClick,
       )
     } else {
@@ -262,18 +276,24 @@ private fun BoxScope.VerticalGradient() {
 }
 
 @Composable
-private fun RegenerateButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun BottomButton(
+  modifier: Modifier = Modifier,
+  label: String,
+  imageVector: ImageVector,
+  contentDescription: String,
+  onClick: () -> Unit,
+) {
   val contentColor = MaterialTheme.colorScheme.onPrimary
 
   Button(modifier = modifier, onClick = onClick) {
     Icon(
       modifier = Modifier.size(20.dp),
-      imageVector = Icons.Default.Refresh,
+      imageVector = imageVector,
       tint = contentColor,
-      contentDescription = "Regenerate button",
+      contentDescription = contentDescription,
     )
     Spacer(modifier = Modifier.width(8.dp))
-    Text(text = "Regenerate", style = MaterialTheme.typography.titleSmall, color = contentColor)
+    Text(text = label, style = MaterialTheme.typography.titleSmall, color = contentColor)
   }
 }
 
