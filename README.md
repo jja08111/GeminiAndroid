@@ -2,9 +2,9 @@
 
 This is the demo app with Gemini API.
 
-| Chat                   | Pick images                          | Select response                              |
-|------------------------|--------------------------------------|----------------------------------------------|
-| ![chat](docs/chat.gif) | ![pick_images](docs/pick_images.gif) | ![select-response](docs/select_response.gif) |
+| Chat                   | Attach images                          | Select response                              |
+|------------------------|----------------------------------------|----------------------------------------------|
+| ![chat](docs/chat.gif) | ![pick_images](docs/attach_images.gif) | ![select-response](docs/select_response.gif) |
 
 ## How to run?
 
