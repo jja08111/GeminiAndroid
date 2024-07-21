@@ -69,6 +69,7 @@ fun CrossFade(
   firstContent: @Composable () -> Unit,
   secondContent: @Composable () -> Unit,
 ) {
+  // TODO: Add height properties
   var firstContentWidth by remember { mutableStateOf(0) }
   var secondContentWidth by remember { mutableStateOf(0) }
 
