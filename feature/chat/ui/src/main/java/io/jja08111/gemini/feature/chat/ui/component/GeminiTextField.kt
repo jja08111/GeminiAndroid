@@ -137,16 +137,16 @@ internal fun GeminiTextField(
       }
       Row(modifier = Modifier.align(Alignment.CenterVertically)) {
         when (trailingButtonState) {
-          TrailingButtonState.Empty -> {
-            // No content
-          }
+          TrailingButtonState.Empty -> {}
 
           TrailingButtonState.Send -> SendButton(onClick = onSendClick)
 
-          TrailingButtonState.Stop -> {
-            // TODO: 정지 버튼으로 바꾸기
-            CircularProgressIndicator()
-          }
+          // TODO: 정지 버튼으로 바꾸기
+          TrailingButtonState.Stop -> CircularProgressIndicator(
+            modifier = Modifier
+              .padding(horizontal = 12.dp)
+              .size(24.dp),
+          )
         }
       }
     }
