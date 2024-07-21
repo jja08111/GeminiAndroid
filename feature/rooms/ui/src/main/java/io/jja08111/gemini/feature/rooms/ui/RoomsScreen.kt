@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
@@ -66,51 +67,56 @@ fun RoomsScreen(
     ) {
       val rooms = uiState.roomStream.collectAsLazyPagingItems()
       val loadState = rooms.loadState
-      LazyColumn(modifier = Modifier.fillMaxSize()) {
-        when (val refreshState = loadState.refresh) {
-          is LoadState.Loading -> {
-            items(count = 5) { RoomTileSkeleton() }
-          }
 
-          is LoadState.Error -> {
-            item {
-              Text(
-                modifier = Modifier.fillParentMaxSize(),
-                text = refreshState.error.localizedMessage ?: stringResource(
-                  R.string.feature_rooms_ui_failed_to_load,
-                ),
-              )
+      if (loadState.refresh is LoadState.NotLoading && rooms.itemCount == 0) {
+        EmptyRoomContent(modifier = Modifier.fillMaxSize())
+      } else {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+          when (val refreshState = loadState.refresh) {
+            is LoadState.Loading -> {
+              items(count = 5) { RoomTileSkeleton() }
+            }
+
+            is LoadState.Error -> {
+              item {
+                Text(
+                  modifier = Modifier.fillParentMaxSize(),
+                  text = refreshState.error.localizedMessage ?: stringResource(
+                    R.string.feature_rooms_ui_failed_to_load,
+                  ),
+                )
+              }
+            }
+
+            is LoadState.NotLoading -> {
+              items(count = rooms.itemCount) { index ->
+                val room = checkNotNull(rooms[index])
+                RoomTile(
+                  modifier = Modifier.fillMaxWidth(),
+                  room = room,
+                  onClick = { onRoomClick(room.id) },
+                )
+              }
             }
           }
-
-          is LoadState.NotLoading -> {
-            items(count = rooms.itemCount) { index ->
-              val room = checkNotNull(rooms[index])
-              RoomTile(
-                modifier = Modifier.fillMaxWidth(),
-                room = room,
-                onClick = { onRoomClick(room.id) },
-              )
+          when (val appendState = loadState.append) {
+            is LoadState.Loading -> {
+              item { RoomTileSkeleton() }
             }
-          }
-        }
-        when (val appendState = loadState.append) {
-          is LoadState.Loading -> {
-            item { RoomTileSkeleton() }
-          }
 
-          is LoadState.Error -> {
-            item {
-              Text(
-                modifier = Modifier,
-                text = appendState.error.localizedMessage ?: stringResource(
-                  R.string.feature_rooms_ui_failed_to_load,
-                ),
-              )
+            is LoadState.Error -> {
+              item {
+                Text(
+                  modifier = Modifier,
+                  text = appendState.error.localizedMessage ?: stringResource(
+                    R.string.feature_rooms_ui_failed_to_load,
+                  ),
+                )
+              }
             }
-          }
 
-          is LoadState.NotLoading -> {}
+            is LoadState.NotLoading -> {}
+          }
         }
       }
       FloatingActionButton(
@@ -121,6 +127,30 @@ fun RoomsScreen(
       ) {
         Icon(imageVector = Icons.Filled.Add, contentDescription = "Create a chat room")
       }
+    }
+  }
+}
+
+@Composable
+private fun EmptyRoomContent(modifier: Modifier = Modifier) {
+  val color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+
+  Box(modifier = modifier) {
+    Column(modifier = Modifier.align(Alignment.Center)) {
+      Icon(
+        modifier = Modifier
+          .align(Alignment.CenterHorizontally)
+          .size(96.dp),
+        imageVector = Icons.Default.Star,
+        tint = color,
+        contentDescription = null,
+      )
+      Spacer(modifier = Modifier.height(16.dp))
+      Text(
+        modifier = Modifier.align(Alignment.CenterHorizontally),
+        text = "Empty chat room",
+        style = MaterialTheme.typography.titleLarge.copy(color = color),
+      )
     }
   }
 }
