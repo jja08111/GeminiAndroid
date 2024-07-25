@@ -10,7 +10,7 @@ import io.github.jja08111.core.common.image.BitmapCreator
 import io.jja08111.gemini.database.entity.ModelResponseStateEntity
 import io.jja08111.gemini.feature.chat.data.BuildConfig
 import io.jja08111.gemini.feature.chat.data.exception.EmptyContentException
-import io.jja08111.gemini.feature.chat.data.exception.EmptyMessageGroupsOnRegenerationException
+import io.jja08111.gemini.feature.chat.data.exception.EmptyMessageGroupsException
 import io.jja08111.gemini.feature.chat.data.exception.NotJoinedException
 import io.jja08111.gemini.feature.chat.data.extension.toContents
 import io.jja08111.gemini.feature.chat.data.extension.toResponseContentPartials
@@ -123,8 +123,7 @@ class GenerativeChatRepository @Inject constructor(
       val roomId = joinedRoomId ?: throw NotJoinedException()
       val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
       val messageGroups = messageGroupStream.first()
-      val lastMessageGroup =
-        messageGroups.lastOrNull() ?: throw EmptyMessageGroupsOnRegenerationException()
+      val lastMessageGroup = messageGroups.lastOrNull() ?: throw EmptyMessageGroupsException()
       val lastPrompt = lastMessageGroup.prompt
       val lastPromptId = lastPrompt.id
       val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
@@ -156,7 +155,7 @@ class GenerativeChatRepository @Inject constructor(
       val messageGroups = messageGroupStream.first()
       val messageGroup = messageGroups.firstOrNull {
         it.selectedResponse.id == responseId
-      } ?: throw EmptyMessageGroupsOnRegenerationException()
+      } ?: throw EmptyMessageGroupsException()
       val prompt = messageGroup.prompt
       val promptId = prompt.id
       val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
