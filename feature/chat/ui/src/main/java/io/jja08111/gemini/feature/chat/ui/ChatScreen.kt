@@ -96,7 +96,11 @@ internal fun ChatScreen(
 
   ScrollPositionSideEffect(messageGroups = messageGroups, listState = listState)
 
-  Column(modifier = Modifier.fillMaxSize()) {
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(MaterialTheme.colorScheme.background),
+  ) {
     Scaffold(
       modifier = Modifier.weight(1f),
       snackbarHost = { SnackbarHost(snackbarHostState) },
