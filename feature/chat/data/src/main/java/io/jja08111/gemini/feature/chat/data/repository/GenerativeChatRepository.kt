@@ -121,18 +121,16 @@ class GenerativeChatRepository @Inject constructor(
     return runCatching {
       val model = generativeModel ?: throw NotJoinedException()
       val roomId = joinedRoomId ?: throw NotJoinedException()
-      val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
-      val messageGroups = messageGroupStream.first()
+      val messageGroups = chatLocalDataSource.getMessageGroupsBy(roomId)
       val lastMessageGroup = messageGroups.lastOrNull() ?: throw EmptyMessageGroupsException()
       val lastPrompt = lastMessageGroup.prompt
-      val lastPromptId = lastPrompt.id
       val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
 
       chatLocalDataSource.insertResponsesAndRemoveError(
         newResponseIds = responseTextBuilders.map { it.id },
         errorResponseId = lastMessageGroup.selectedResponse.id,
         roomId = roomId,
-        promptId = lastPromptId,
+        promptId = lastPrompt.id,
       )
 
       return model.generateTextMessageStream(
@@ -141,7 +139,7 @@ class GenerativeChatRepository @Inject constructor(
         history = messageGroups
           .dropLast(1)
           .flatMap(MessageGroup::toContents),
-        promptId = lastPromptId,
+        promptId = lastPrompt.id,
         responseTextBuilders = responseTextBuilders,
       )
     }
@@ -151,26 +149,24 @@ class GenerativeChatRepository @Inject constructor(
     return runCatching {
       val model = generativeModel ?: throw NotJoinedException()
       val roomId = joinedRoomId ?: throw NotJoinedException()
-      val messageGroupStream = chatLocalDataSource.getMessageGroupStream(roomId)
-      val messageGroups = messageGroupStream.first()
+      val messageGroups = chatLocalDataSource.getMessageGroupsBy(roomId)
       val messageGroup = messageGroups.firstOrNull {
         it.selectedResponse.id == responseId
       } ?: throw EmptyMessageGroupsException()
       val prompt = messageGroup.prompt
-      val promptId = prompt.id
       val responseTextBuilders = List(CANDIDATE_COUNT) { ResponseTextBuilder() }
 
       chatLocalDataSource.insertAndUnselectOldResponses(
         newResponseIds = responseTextBuilders.map { it.id },
         roomId = roomId,
-        promptId = promptId,
+        promptId = prompt.id,
       )
 
       return model.generateTextMessageStream(
         message = prompt.text,
         images = prompt.images.map { promptImageLocalDataSource.loadImage(it.path) },
         history = messageGroups.flatMap(MessageGroup::toContents),
-        promptId = promptId,
+        promptId = prompt.id,
         responseTextBuilders = responseTextBuilders,
       )
     }
