@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.jja08111.gemini.core.ui.rememberPrevious
@@ -59,7 +60,10 @@ import io.jja08111.gemini.feature.chat.ui.component.rememberModelResponseDropdow
 import io.jja08111.gemini.model.MessageGroup
 import io.jja08111.gemini.model.ModelResponse
 import io.jja08111.gemini.model.ModelResponseState
+import io.jja08111.gemini.model.Prompt
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 
 // TODO: Show keyboard when enter this screen
 @Composable
@@ -334,5 +338,120 @@ private fun ScrollPositionSideEffect(messageGroups: List<MessageGroup>, listStat
       listState.scrollToLastMessageGroup(animated = false)
       isDoneInitScrolling = true
     }
+  }
+}
+
+@Preview
+@Composable
+private fun EmptyChatScreenPreview() {
+  val uiState = ChatUiState(messageGroupStream = flowOf(listOf()))
+
+  MaterialTheme {
+    ChatScreen(
+      uiState = uiState,
+      snackbarHostState = SnackbarHostState(),
+      onBackClick = {},
+      onInputUpdate = {},
+      onCameraClick = {},
+      onAlbumClick = {},
+      onRemoveImageClick = {},
+      onSendClick = {},
+      onRegenerateOnErrorClick = {},
+      onSelectResponseClick = {},
+      onRegenerateResponseClick = {},
+    )
+  }
+}
+
+@Preview
+@Composable
+private fun ChatScreenPreview() {
+  val messageGroups = listOf(
+    MessageGroup(
+      responseCount = 1,
+      prompt = Prompt(
+        roomId = "id",
+        text = "Hello",
+        images = emptyList(),
+      ),
+      selectedResponse = ModelResponse(
+        text = "Hi nice to meet you.",
+        roomId = "id",
+        selected = true,
+        state = ModelResponseState.Generated,
+        createdAt = LocalDateTime.of(2024, 8, 30, 8, 10),
+      ),
+    ),
+    MessageGroup(
+      responseCount = 1,
+      prompt = Prompt(
+        roomId = "id",
+        text = "Okay",
+        images = emptyList(),
+      ),
+      selectedResponse = ModelResponse(
+        text = "Good. How can I help you?",
+        roomId = "id",
+        state = ModelResponseState.Generated,
+        selected = true,
+        createdAt = LocalDateTime.of(2024, 8, 30, 8, 10),
+      ),
+    ),
+  )
+  val uiState = ChatUiState(messageGroupStream = flowOf(messageGroups))
+
+  MaterialTheme {
+    ChatScreen(
+      uiState = uiState,
+      snackbarHostState = SnackbarHostState(),
+      onBackClick = {},
+      onInputUpdate = {},
+      onCameraClick = {},
+      onAlbumClick = {},
+      onRemoveImageClick = {},
+      onSendClick = {},
+      onRegenerateOnErrorClick = {},
+      onSelectResponseClick = {},
+      onRegenerateResponseClick = {},
+    )
+  }
+}
+
+@Preview
+@Composable
+private fun ErrorChatScreenPreview() {
+  val messageGroups = listOf(
+    MessageGroup(
+      responseCount = 1,
+      prompt = Prompt(
+        roomId = "id",
+        text = "Okay",
+        images = emptyList(),
+      ),
+      selectedResponse = ModelResponse(
+        text = "Good. How ca",
+        roomId = "id",
+        state = ModelResponseState.Error,
+        selected = true,
+        createdAt = LocalDateTime.of(2024, 8, 30, 8, 10),
+      ),
+    ),
+  )
+  val uiState = ChatUiState(messageGroupStream = flowOf(messageGroups))
+
+  MaterialTheme {
+    ChatScreen(
+      uiState = uiState,
+      snackbarHostState = SnackbarHostState(),
+      onBackClick = {},
+      onInputUpdate = {},
+      onCameraClick = {},
+      onAlbumClick = {},
+      onRemoveImageClick = {},
+      onSendClick = {},
+      onRegenerateOnErrorClick = {},
+      onSelectResponseClick = {},
+      onRegenerateResponseClick = {},
+    )
   }
 }
