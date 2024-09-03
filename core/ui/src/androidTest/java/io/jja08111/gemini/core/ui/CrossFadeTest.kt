@@ -36,6 +36,26 @@ class CrossFadeTest {
     composeRule.onNodeWithText(SECOND_TITLE).assertIsDisplayed()
   }
 
+  @Test
+  fun shouldSwitchToFirstComponent() {
+    var showFirst by mutableStateOf(false)
+    composeRule.setContent {
+      CrossFade(
+        showFirst = showFirst,
+        firstContent = { FirstComponent() },
+        secondContent = { SecondComponent() },
+      )
+    }
+
+    composeRule.onNodeWithText(FIRST_TITLE).assertIsNotDisplayed()
+    composeRule.onNodeWithText(SECOND_TITLE).assertIsDisplayed()
+
+    showFirst = true
+
+    composeRule.onNodeWithText(FIRST_TITLE).assertIsDisplayed()
+    composeRule.onNodeWithText(SECOND_TITLE).assertIsNotDisplayed()
+  }
+
   @Suppress("TestFunctionName")
   @Composable
   private fun FirstComponent() {
